@@ -26,6 +26,11 @@
 					</div>
 				</div>
 
+				<!-- price history chart (under stock info, above buy controls) -->
+				<div class="mt-4">
+					<canvas id="price-chart" height="160" class="w-full"></canvas>
+				</div>
+
 				<div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
 					<div class="col-span-2">
 						<label class="block text-sm text-muted mb-1">Quantity</label>
@@ -43,19 +48,21 @@
 	</div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 // Simple client-side logic to populate stocks dropdown and poll for updates
 (function(){
-		const listUrl = '/api/stocks/';
-	const detailUrl = (s) => `/api/stocks/${encodeURIComponent(s)}/`;
-		const buyUrl = '/api/buy/';
-	const select = document.getElementById('stock-select');
-	const nameEl = document.getElementById('stock-name');
-	const symbolEl = document.getElementById('stock-symbol');
-	const priceEl = document.getElementById('stock-price');
-		const amountEl = document.getElementById('buy-amount');
-		const buyBtn = document.getElementById('buy-btn');
-		const buyMsg = document.getElementById('buy-msg');
+    	const listUrl = '/api/stocks/';
+    const detailUrl = (s) => `/api/stocks/${encodeURIComponent(s)}/`;
+    const historyUrl = (s) => `/api/stocks/${encodeURIComponent(s)}/history/`;
+    	const buyUrl = '/api/buy/';
+    	const select = document.getElementById('stock-select');
+    	const nameEl = document.getElementById('stock-name');
+    	const symbolEl = document.getElementById('stock-symbol');
+    	const priceEl = document.getElementById('stock-price');
+    		const amountEl = document.getElementById('buy-amount');
+    	const buyBtn = document.getElementById('buy-btn');
+    	const buyMsg = document.getElementById('buy-msg');
 
 		let msgTimeout = null;
 
@@ -70,6 +77,8 @@
 
 	let currentSymbol = null;
 	let pollHandle = null;
+	let historyHandle = null;
+	let priceChart = null;
 
 	function fmtPrice(p){ return `$${(p).toFixed(2)}`; }
 
@@ -115,8 +124,35 @@
 			nameEl.textContent = d.name || '';
 			symbolEl.textContent = d.symbol || '';
 			priceEl.textContent = d.price!==undefined ? fmtPrice(d.price) : '';
+			// update history chart when detail changes
+			updateHistory(symbol);
 		}catch(e){
 			console.error('updateDetail', e);
+		}
+	}
+
+	async function updateHistory(symbol){
+		if(!symbol) return;
+		try{
+			const res = await fetch(historyUrl(symbol), {cache: 'no-store'});
+			if(!res.ok) throw new Error('Failed to load history');
+			const h = await res.json();
+			const labels = h.map(item => new Date(item.timestamp).toLocaleString());
+			const data = h.map(item => item.price);
+			const ctx = document.getElementById('price-chart').getContext('2d');
+			if(!priceChart){
+				priceChart = new Chart(ctx, {
+					type: 'line',
+					data: { labels: labels, datasets: [{ label: 'Price', data: data, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.08)', tension: 0.2 }] },
+					options: { responsive: true, maintainAspectRatio: false, plugins: { tooltip: { mode: 'index', intersect: false } }, scales: { x: { display: true }, y: { display: true, ticks: { callback: v => '$' + v } } } }
+				});
+			} else {
+				priceChart.data.labels = labels;
+				priceChart.data.datasets[0].data = data;
+				priceChart.update();
+			}
+		}catch(e){
+			console.error('updateHistory', e);
 		}
 	}
 
@@ -185,6 +221,9 @@
 		// reset poll to update this symbol regularly
 		if(pollHandle) clearInterval(pollHandle);
 		pollHandle = setInterval(()=> updateDetail(currentSymbol), 5000);
+		// history poll
+		if(historyHandle) clearInterval(historyHandle);
+		historyHandle = setInterval(()=> updateHistory(currentSymbol), 5000);
 	});
 
 	// initial load
@@ -194,6 +233,11 @@
 		pollHandle = setInterval(()=>{
 			if(currentSymbol) updateDetail(currentSymbol);
 			else fetchStocks();
+		}, 5000);
+
+		// history polling (updates chart)
+		historyHandle = setInterval(()=>{
+			if(currentSymbol) updateHistory(currentSymbol);
 		}, 5000);
 	});
 

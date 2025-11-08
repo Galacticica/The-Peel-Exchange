@@ -1,11 +1,8 @@
 from django.shortcuts import render
 from django.http import JsonResponse, Http404
-from django.views.decorators.http import require_GET
+from django.views.decorators.http import require_GET, require_POST
 from django.contrib.auth.decorators import login_required
-from market.models import Stock
-from market.models import Holding
-from django.views.decorators.http import require_POST
-from django.http import JsonResponse
+from market.models import Stock, Holding
 from django.db import transaction
 import json
 
@@ -140,5 +137,53 @@ def buy_stock(request):
 			'shares': holding.shares,
 		}
 	})
+
+
+@require_GET
+def stock_history(request, symbol):
+	"""Return historical prices for a stock as a list of {timestamp, price}.
+
+	Returns up to 500 most recent entries ordered from oldest->newest.
+	"""
+	try:
+		stock = Stock.objects.get(symbol=symbol)
+	except Stock.DoesNotExist:
+		raise Http404("Stock not found")
+
+	history_qs = stock.history.order_by('-timestamp')[:500]
+	history = list(history_qs)
+	history.reverse()
+
+	data = []
+	for h in history:
+		data.append({
+			'timestamp': h.timestamp.isoformat(),
+			'price': round(h.price, 2),
+		})
+
+	return JsonResponse(data, safe=False)
+	@require_GET
+	def stock_history(request, symbol):
+		"""Return historical prices for a stock as a list of {timestamp, price}.
+
+		Returns up to 500 most recent entries ordered from oldest->newest.
+		"""
+		try:
+			stock = Stock.objects.get(symbol=symbol)
+		except Stock.DoesNotExist:
+			raise Http404("Stock not found")
+
+		history_qs = stock.history.order_by('-timestamp')[:500]
+		history = list(history_qs)
+		history.reverse()
+
+		data = []
+		for h in history:
+			data.append({
+				'timestamp': h.timestamp.isoformat(),
+				'price': round(h.price, 2),
+			})
+
+		return JsonResponse(data, safe=False)
 
 
