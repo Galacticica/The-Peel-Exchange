@@ -3,6 +3,11 @@ from django.http import JsonResponse, Http404
 from django.views.decorators.http import require_GET
 from django.contrib.auth.decorators import login_required
 from market.models import Stock
+from market.models import Holding
+from django.views.decorators.http import require_POST
+from django.http import JsonResponse
+from django.db import transaction
+import json
 
 
 @require_GET
@@ -78,5 +83,62 @@ def stock_detail(request, symbol):
 def market_home(request):
 	"""Render the market homepage. The template uses the API endpoints to populate data."""
 	return render(request, 'market/home.html')
+
+
+@login_required
+@require_POST
+def buy_stock(request):
+	"""Handle buying a stock for the logged-in user.
+
+	Expects JSON body: {"symbol": "ABC", "amount": 1}
+	"""
+	try:
+		payload = json.loads(request.body.decode('utf-8'))
+	except Exception:
+		return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+	symbol = payload.get('symbol')
+	amount = payload.get('amount')
+
+	try:
+		amount = int(amount)
+	except Exception:
+		return JsonResponse({'error': 'Invalid amount'}, status=400)
+
+	if amount < 1:
+		return JsonResponse({'error': 'Amount must be at least 1'}, status=400)
+
+	try:
+		stock = Stock.objects.get(symbol=symbol)
+	except Stock.DoesNotExist:
+		return JsonResponse({'error': 'Stock not found'}, status=404)
+
+	cost = stock.price * amount
+
+	user = request.user
+
+	with transaction.atomic():
+		# reload fresh balance
+		user.refresh_from_db()
+		if user.balance < cost:
+			return JsonResponse({'error': 'Insufficient funds', 'balance': user.balance}, status=400)
+
+		# subtract balance
+		user.balance = user.balance - cost
+		user.save()
+
+		holding, created = Holding.objects.get_or_create(user=user, stock=stock, defaults={'shares': amount})
+		if not created:
+			holding.shares = holding.shares + amount
+			holding.save()
+
+	return JsonResponse({
+		'success': True,
+		'balance': round(user.balance, 2),
+		'holding': {
+			'symbol': stock.symbol,
+			'shares': holding.shares,
+		}
+	})
 
 

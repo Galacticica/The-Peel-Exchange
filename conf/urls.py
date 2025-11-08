@@ -26,6 +26,7 @@ urlpatterns = [
     path('api/ticker/', market_views.ticker_data, name='ticker-data'),
     path('api/stocks/', market_views.stocks_list, name='stocks-list'),
     path('api/stocks/<str:symbol>/', market_views.stock_detail, name='stock-detail'),
+    path('api/buy/', market_views.buy_stock, name='buy-stock'),
     path('', include('market.urls')),
     path('__reload__/', include('django_browser_reload.urls')),
     path('admin/', admin.site.urls),

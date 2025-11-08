@@ -41,6 +41,9 @@ class Holding(models.Model):
     stock = models.ForeignKey(Stock, on_delete=models.CASCADE)
     shares = models.IntegerField(default=0)
 
+    def __str__(self):
+        return f"{self.user.first_name} {self.user.last_name} holds {self.shares} shares of {self.stock.symbol}"
+
 class MarketEvent(models.Model):
     """Model representing a market event that can impact stock prices."""
     name = models.CharField(max_length=100)

@@ -25,6 +25,18 @@
 						<div id="stock-price" class="text-2xl font-mono">&nbsp;</div>
 					</div>
 				</div>
+
+				<div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+					<div class="col-span-2">
+						<label class="block text-sm text-muted mb-1">Quantity</label>
+						<input id="buy-amount" type="number" min="1" value="1" class="input input-bordered w-full" />
+					</div>
+					<div>
+						<button id="buy-btn" class="btn btn-primary w-full">Buy</button>
+					</div>
+				</div>
+
+				<div id="buy-msg" class="mt-3 text-sm"></div>
 			</div>
 
 		</div>
@@ -34,12 +46,27 @@
 <script>
 // Simple client-side logic to populate stocks dropdown and poll for updates
 (function(){
-	const listUrl = '/api/stocks/';
+		const listUrl = '/api/stocks/';
 	const detailUrl = (s) => `/api/stocks/${encodeURIComponent(s)}/`;
+		const buyUrl = '/api/buy/';
 	const select = document.getElementById('stock-select');
 	const nameEl = document.getElementById('stock-name');
 	const symbolEl = document.getElementById('stock-symbol');
 	const priceEl = document.getElementById('stock-price');
+		const amountEl = document.getElementById('buy-amount');
+		const buyBtn = document.getElementById('buy-btn');
+		const buyMsg = document.getElementById('buy-msg');
+
+		let msgTimeout = null;
+
+		function scheduleClear(){
+			if(msgTimeout) clearTimeout(msgTimeout);
+			msgTimeout = setTimeout(()=>{
+				buyMsg.textContent = '';
+				buyMsg.className = 'mt-3 text-sm';
+				msgTimeout = null;
+			}, 5000);
+		}
 
 	let currentSymbol = null;
 	let pollHandle = null;
@@ -92,6 +119,64 @@
 			console.error('updateDetail', e);
 		}
 	}
+
+
+		// CSRF helper
+		function getCookie(name) {
+			let cookieValue = null;
+			if (document.cookie && document.cookie !== '') {
+				const cookies = document.cookie.split(';');
+				for (let i = 0; i < cookies.length; i++) {
+					const cookie = cookies[i].trim();
+					if (cookie.substring(0, name.length + 1) === (name + '=')) {
+						cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+						break;
+					}
+				}
+			}
+			return cookieValue;
+		}
+
+		async function buyCurrent(){
+			const symbol = currentSymbol;
+			const amount = parseInt(amountEl.value, 10) || 0;
+			buyMsg.textContent = '';
+			if(!symbol) return;
+			if(amount < 1){ buyMsg.textContent = 'Enter a quantity of 1 or more.'; buyMsg.className = 'mt-3 text-sm text-red-700'; scheduleClear(); return; }
+
+			try{
+				const res = await fetch(buyUrl, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-CSRFToken': getCookie('csrftoken')
+					},
+					body: JSON.stringify({ symbol, amount })
+				});
+
+				const body = await res.json();
+						if(!res.ok){
+							buyMsg.textContent = body.error || 'Purchase failed';
+							buyMsg.className = 'mt-3 text-sm text-red-700';
+							scheduleClear();
+							return;
+						}
+
+				// success
+				buyMsg.textContent = `Bought ${body.holding.shares} ${body.holding.symbol} — new balance $${Number(body.balance).toFixed(2)}`;
+				buyMsg.className = 'mt-3 text-sm text-green-800';
+				scheduleClear();
+				// refresh details to show updated price if any
+				updateDetail(symbol);
+				}catch(e){
+					console.error('buyCurrent', e);
+					buyMsg.textContent = 'Purchase failed (network)';
+					buyMsg.className = 'mt-3 text-sm text-red-700';
+					scheduleClear();
+				}
+		}
+
+		buyBtn.addEventListener('click', ()=> buyCurrent());
 
 	select.addEventListener('change', (e)=>{
 		const s = e.target.value;
