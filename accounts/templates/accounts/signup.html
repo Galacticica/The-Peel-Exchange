@@ -2,48 +2,75 @@
 {% load static %}
 
 {% block content %}
-<div>
-    <div>
-        <h2>Sign Up</h2>
-        <form method="post" action="{% url 'signup_page' %}">
-            {% csrf_token %}
-            {{ form.non_field_errors }}
-            <div>
-                {{ form.first_name.label_tag }}
-                {{ form.first_name }}
-                {{ form.first_name.errors }}
+<div class="hero min-h-[70vh] bg-gradient-to-b from-yellow-50 to-white">
+    <div class="hero-content w-full">
+        <div class="card w-full max-w-lg shadow-2xl bg-base-100">
+            <div class="card-body">
+                <div class="flex items-center space-x-3">
+                    <div class="text-4xl">🍌</div>
+                    <h2 class="card-title text-2xl">Create your account</h2>
+                </div>
+
+                <form method="post" action="{% url 'signup_page' %}" class="space-y-4">
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-error shadow-lg">
+                                <div>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    <span>{{ form.non_field_errors }}</span>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="label" for="id_first_name"><span class="label-text">First name</span></label>
+                                    {{ form.first_name }}
+                                    {% if form.first_name.errors %}
+                                        <span class="text-error text-sm">{{ form.first_name.errors|striptags }}</span>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <label class="label" for="id_last_name"><span class="label-text">Last name</span></label>
+                                    {{ form.last_name }}
+                                    {% if form.last_name.errors %}
+                                        <span class="text-error text-sm">{{ form.last_name.errors|striptags }}</span>
+                                    {% endif %}
+                                </div>
+                        </div>
+
+                        <div>
+                            <label class="label" for="id_email"><span class="label-text">Email</span></label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                                <span class="text-error text-sm">{{ form.email.errors|striptags }}</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="label" for="id_password"><span class="label-text">Password</span></label>
+                                    {{ form.password }}
+                                    {% if form.password.errors %}
+                                        <span class="text-error text-sm">{{ form.password.errors|striptags }}</span>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <label class="label" for="id_confirm_password"><span class="label-text">Confirm</span></label>
+                                    {{ form.confirm_password }}
+                                    {% if form.confirm_password.errors %}
+                                        <span class="text-error text-sm">{{ form.confirm_password.errors|striptags }}</span>
+                                    {% endif %}
+                                </div>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <button type="submit" class="btn btn-warning">Sign Up</button>
+                            <a href="{% url 'login_page' %}" class="link link-hover">Already have an account? Log in</a>
+                        </div>
+                </form>
             </div>
-            <div>
-                {{ form.last_name.label_tag }}
-                {{ form.last_name }}
-                {{ form.last_name.errors }}
-            </div>
-            <div>
-                {{ form.email.label_tag }}
-                {{ form.email }}
-                {{ form.email.errors }}
-            </div>
-            <div>
-                {{ form.password.label_tag }}
-                {{ form.password }}
-                {{ form.password.errors }}
-            </div>
-            <div>
-                {{ form.confirm_password.label_tag }}
-                {{ form.confirm_password }}
-                {{ form.confirm_password.errors }}
-            </div>
-            <div>
-                {{ form.role.label_tag }}
-                {{ form.role }}
-                {{ form.role.errors }}
-            </div>
-            <button type="submit">Sign Up</button>
-        </form>
-        <div>
-            <p>Already have an account? 
-                <a href="{% url 'login_page' %}">Log In</a>
-            </p>
         </div>
     </div>
 </div>
