@@ -14,7 +14,7 @@ let __ticker_initialized = false;
 let __ticker_item_count = 0;
 
 function createItemElement(it) {
-    const cls = it.direction > 0 ? 'text-success' : (it.direction < 0 ? 'text-error' : 'text-base-content');
+    const cls = it.direction > 0 ? 'ticker-up' : (it.direction < 0 ? 'ticker-down' : 'ticker-neutral');
     const price = (typeof it.price === 'number') ? it.price.toFixed(2) : parseFloat(it.price).toFixed(2);
     const el = document.createElement('div');
     el.className = `ticker-item inline-flex items-center gap-2 px-4 py-1 rounded-full bg-base-100 shadow-sm ${cls}`;
@@ -81,12 +81,12 @@ function renderTicker(items) {
             if (sym2) sym2.textContent = it.symbol;
             if (pr2) pr2.textContent = `$${(typeof it.price === 'number' ? it.price.toFixed(2) : parseFloat(it.price).toFixed(2))}`;
             if (ar2) ar2.textContent = arrowForDirection(it.direction);
-            // update color class based on direction
-            el1.classList.remove('text-success', 'text-error', 'text-base-content');
-            el2.classList.remove('text-success', 'text-error', 'text-base-content');
-            const cls = it.direction > 0 ? 'text-success' : (it.direction < 0 ? 'text-error' : 'text-base-content');
-            el1.classList.add(cls);
-            el2.classList.add(cls);
+                // update color class based on direction (use ticker-specific classes)
+                el1.classList.remove('ticker-up', 'ticker-down', 'ticker-neutral');
+                el2.classList.remove('ticker-up', 'ticker-down', 'ticker-neutral');
+                const cls = it.direction > 0 ? 'ticker-up' : (it.direction < 0 ? 'ticker-down' : 'ticker-neutral');
+                el1.classList.add(cls);
+                el2.classList.add(cls);
         }
     }
 
