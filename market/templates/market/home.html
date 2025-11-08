@@ -2,5 +2,117 @@
 
 {% block content %}
 
+<div class="min-h-screen flex items-start justify-center p-6">
+	<div class="w-full max-w-3xl">
+		<div class="card bg-base-200 shadow-md p-6">
+			<h2 class="text-2xl font-bold mb-4">Market — Choose a stock</h2>
+
+			<div class="mb-4">
+				<label class="block text-sm font-medium text-base-content mb-2">Stock</label>
+				<select id="stock-select" class="select select-bordered w-full">
+					<!-- options populated by JS -->
+				</select>
+			</div>
+
+			<div id="stock-card" class="p-4 rounded-lg bg-base-100 shadow-sm">
+				<div class="flex items-baseline justify-between">
+					<div>
+						<div id="stock-name" class="text-lg font-semibold">&nbsp;</div>
+						<div id="stock-symbol" class="text-sm text-muted">&nbsp;</div>
+					</div>
+					<div class="text-right">
+						<div class="text-sm text-muted">Current Price</div>
+						<div id="stock-price" class="text-2xl font-mono">&nbsp;</div>
+					</div>
+				</div>
+			</div>
+
+		</div>
+	</div>
+</div>
+
+<script>
+// Simple client-side logic to populate stocks dropdown and poll for updates
+(function(){
+	const listUrl = '/api/stocks/';
+	const detailUrl = (s) => `/api/stocks/${encodeURIComponent(s)}/`;
+	const select = document.getElementById('stock-select');
+	const nameEl = document.getElementById('stock-name');
+	const symbolEl = document.getElementById('stock-symbol');
+	const priceEl = document.getElementById('stock-price');
+
+	let currentSymbol = null;
+	let pollHandle = null;
+
+	function fmtPrice(p){ return `$${(p).toFixed(2)}`; }
+
+	async function fetchStocks(){
+		try{
+			const res = await fetch(listUrl, {cache: 'no-store'});
+			if(!res.ok) throw new Error('Failed to load stocks');
+			const stocks = await res.json();
+			populateSelect(stocks);
+		}catch(e){
+			console.error('fetchStocks', e);
+		}
+	}
+
+	function populateSelect(stocks){
+		// if options already same as stocks, skip replacing to preserve selection
+		const existing = Array.from(select.options).map(o => o.value);
+		const newSymbols = stocks.map(s => s.symbol);
+		if(JSON.stringify(existing) === JSON.stringify(newSymbols)) return;
+
+		select.innerHTML = '';
+		stocks.forEach((s, idx) => {
+			const opt = document.createElement('option');
+			opt.value = s.symbol;
+			opt.textContent = `${s.name} (${s.symbol})`;
+			select.appendChild(opt);
+		});
+
+		// default to first stock
+		if(!currentSymbol && stocks.length>0){
+			select.value = stocks[0].symbol;
+			currentSymbol = stocks[0].symbol;
+			updateDetail(currentSymbol);
+		}
+	}
+
+	async function updateDetail(symbol){
+		if(!symbol) return;
+		try{
+			const res = await fetch(detailUrl(symbol), {cache: 'no-store'});
+			if(!res.ok) throw new Error('Failed to load stock detail');
+			const d = await res.json();
+			nameEl.textContent = d.name || '';
+			symbolEl.textContent = d.symbol || '';
+			priceEl.textContent = d.price!==undefined ? fmtPrice(d.price) : '';
+		}catch(e){
+			console.error('updateDetail', e);
+		}
+	}
+
+	select.addEventListener('change', (e)=>{
+		const s = e.target.value;
+		currentSymbol = s;
+		updateDetail(s);
+		// reset poll to update this symbol regularly
+		if(pollHandle) clearInterval(pollHandle);
+		pollHandle = setInterval(()=> updateDetail(currentSymbol), 5000);
+	});
+
+	// initial load
+	document.addEventListener('DOMContentLoaded', ()=>{
+		fetchStocks();
+		// start polling current symbol if any
+		pollHandle = setInterval(()=>{
+			if(currentSymbol) updateDetail(currentSymbol);
+			else fetchStocks();
+		}, 5000);
+	});
+
+})();
+</script>
 
 {% endblock %}
