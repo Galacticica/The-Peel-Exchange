@@ -10,7 +10,6 @@
 			<div class="mb-4">
 				<label class="block text-sm font-medium text-base-content mb-2">Stock</label>
 				<select id="stock-select" class="select select-bordered w-full">
-					<!-- options populated by JS -->
 				</select>
 			</div>
 
@@ -26,7 +25,6 @@
 					</div>
 				</div>
 
-				<!-- price history chart (under stock info, above buy controls) -->
 				<div class="mt-4">
 					<canvas id="price-chart" height="160" class="w-full"></canvas>
 				</div>
@@ -50,7 +48,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// Simple client-side logic to populate stocks dropdown and poll for updates
 (function(){
     	const listUrl = '/api/stocks/';
     const detailUrl = (s) => `/api/stocks/${encodeURIComponent(s)}/`;
@@ -94,7 +91,6 @@
 	}
 
 	function populateSelect(stocks){
-		// if options already same as stocks, skip replacing to preserve selection
 		const existing = Array.from(select.options).map(o => o.value);
 		const newSymbols = stocks.map(s => s.symbol);
 		if(JSON.stringify(existing) === JSON.stringify(newSymbols)) return;
@@ -107,7 +103,6 @@
 			select.appendChild(opt);
 		});
 
-		// default to first stock
 		if(!currentSymbol && stocks.length>0){
 			select.value = stocks[0].symbol;
 			currentSymbol = stocks[0].symbol;
@@ -124,7 +119,6 @@
 			nameEl.textContent = d.name || '';
 			symbolEl.textContent = d.symbol || '';
 			priceEl.textContent = d.price!==undefined ? fmtPrice(d.price) : '';
-			// update history chart when detail changes
 			updateHistory(symbol);
 		}catch(e){
 			console.error('updateDetail', e);
@@ -157,7 +151,6 @@
 	}
 
 
-		// CSRF helper
 		function getCookie(name) {
 			let cookieValue = null;
 			if (document.cookie && document.cookie !== '') {
@@ -198,11 +191,9 @@
 							return;
 						}
 
-				// success
 				buyMsg.textContent = `Bought ${body.holding.shares} ${body.holding.symbol} — new balance $${Number(body.balance).toFixed(2)}`;
 				buyMsg.className = 'mt-3 text-sm text-green-800';
 				scheduleClear();
-				// refresh details to show updated price if any
 				updateDetail(symbol);
 				}catch(e){
 					console.error('buyCurrent', e);
@@ -218,24 +209,19 @@
 		const s = e.target.value;
 		currentSymbol = s;
 		updateDetail(s);
-		// reset poll to update this symbol regularly
 		if(pollHandle) clearInterval(pollHandle);
 		pollHandle = setInterval(()=> updateDetail(currentSymbol), 5000);
-		// history poll
 		if(historyHandle) clearInterval(historyHandle);
 		historyHandle = setInterval(()=> updateHistory(currentSymbol), 5000);
 	});
 
-	// initial load
 	document.addEventListener('DOMContentLoaded', ()=>{
 		fetchStocks();
-		// start polling current symbol if any
 		pollHandle = setInterval(()=>{
 			if(currentSymbol) updateDetail(currentSymbol);
 			else fetchStocks();
 		}, 5000);
 
-		// history polling (updates chart)
 		historyHandle = setInterval(()=>{
 			if(currentSymbol) updateHistory(currentSymbol);
 		}, 5000);
