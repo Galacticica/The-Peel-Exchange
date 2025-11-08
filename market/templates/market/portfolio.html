@@ -5,9 +5,9 @@
 	<h1 class="text-2xl font-semibold mb-2">Portfolio — {{ user_obj.first_name }} {{ user_obj.last_name }}</h1>
 
 	<div class="mb-4">
-		<p><strong>Cash balance:</strong> ${{ balance }}</p>
-        <p><strong>Stocks total:</strong> ${{ stocks_total }}</p>
-		<p><strong>Total portfolio worth:</strong> ${{ portfolio_worth }}</p>
+		<p><strong>Cash balance:</strong> $<span id="cash-balance" data-balance="{{ balance }}">{{ balance }}</span></p>
+		<p><strong>Stocks total:</strong> $<span id="stocks-total">{{ stocks_total }}</span></p>
+		<p><strong>Total portfolio worth:</strong> $<span id="portfolio-worth">{{ portfolio_worth }}</span></p>
 	</div>
 
 	<h2 class="text-xl font-medium mb-2">Holdings</h2>
@@ -26,10 +26,10 @@
 			</thead>
 			<tbody>
 				{% for h in holdings %}
-				<tr class="border-t">
+				<tr class="border-t" data-symbol="{{ h.symbol }}">
 					<td class="px-4 py-2">{{ h.name }}</td>
 					<td class="px-4 py-2">{{ h.symbol }}</td>
-					<td class="px-4 py-2">
+					<td class="px-4 py-2"><span class="portfolio-direction" data-symbol="{{ h.symbol }}">
 						{% if h.direction == 1 %}
 							<span class="text-green-600" title="Up">&#9650;</span>
 						{% elif h.direction == -1 %}
@@ -37,10 +37,10 @@
 						{% else %}
 							<span class="text-gray-500" title="No change">—</span>
 						{% endif %}
-					</td>
-					<td class="px-4 py-2 text-right">${{ h.price }}</td>
-					<td class="px-4 py-2 text-right">{{ h.shares }}</td>
-					<td class="px-4 py-2 text-right">${{ h.total }}</td>
+					</span></td>
+					<td class="px-4 py-2 text-right">$<span class="portfolio-price" data-symbol="{{ h.symbol }}">{{ h.price }}</span></td>
+					<td class="px-4 py-2 text-right"><span class="portfolio-shares" data-symbol="{{ h.symbol }}">{{ h.shares }}</span></td>
+					<td class="px-4 py-2 text-right">$<span class="portfolio-total" data-symbol="{{ h.symbol }}">{{ h.total }}</span></td>
 				</tr>
 				{% endfor %}
 			</tbody>
@@ -48,6 +48,67 @@
 	{% else %}
 		<p>You don't own any stocks yet.</p>
 	{% endif %}
+
+<script>
+(function(){
+	const POLL_INTERVAL = 5000;
+	const TICKER_URL = '/api/ticker/';
+
+	async function fetchAndUpdate(){
+		try{
+			const res = await fetch(TICKER_URL, { cache: 'no-store' });
+			if(!res.ok) return;
+			const data = await res.json();
+			const map = Object.create(null);
+			data.forEach(it => { map[it.symbol] = it; });
+
+			let stocksTotal = 0;
+
+			document.querySelectorAll('tr[data-symbol]').forEach(row => {
+				const sym = row.dataset.symbol;
+				const item = map[sym];
+				const sharesEl = row.querySelector('.portfolio-shares[data-symbol="' + sym + '"]');
+				const shares = sharesEl ? parseInt(sharesEl.textContent, 10) : 0;
+
+				if(item){
+					const priceEl = row.querySelector('.portfolio-price[data-symbol="' + sym + '"]');
+					const dirEl = row.querySelector('.portfolio-direction[data-symbol="' + sym + '"]');
+					const totalEl = row.querySelector('.portfolio-total[data-symbol="' + sym + '"]');
+
+					const price = (typeof item.price === 'number') ? item.price : parseFloat(item.price);
+					if(priceEl) priceEl.textContent = price.toFixed(2);
+
+					if(dirEl){
+						if(item.direction > 0) dirEl.innerHTML = '<span class="text-green-600" title="Up">&#9650;</span>';
+						else if(item.direction < 0) dirEl.innerHTML = '<span class="text-red-600" title="Down">&#9660;</span>';
+						else dirEl.innerHTML = '<span class="text-gray-500" title="No change">—</span>';
+					}
+
+					const total = Math.round((price * shares + Number.EPSILON) * 100) / 100;
+					if(totalEl) totalEl.textContent = total.toFixed(2);
+					stocksTotal += total;
+				}
+			});
+
+			const stocksTotalEl = document.getElementById('stocks-total');
+			if(stocksTotalEl) stocksTotalEl.textContent = stocksTotal.toFixed(2);
+
+			const balanceEl = document.getElementById('cash-balance');
+			const balance = balanceEl ? parseFloat(balanceEl.dataset.balance || balanceEl.textContent || '0') : 0;
+			const pfEl = document.getElementById('portfolio-worth');
+			if(pfEl) pfEl.textContent = (Math.round((balance + stocksTotal + Number.EPSILON) * 100) / 100).toFixed(2);
+
+		}catch(e){
+			// ignore errors (keep UI stable)
+		}
+	}
+
+	document.addEventListener('DOMContentLoaded', function(){
+		fetchAndUpdate();
+		setInterval(fetchAndUpdate, POLL_INTERVAL);
+	});
+})();
+</script>
 
 </div>
 {% endblock %}
