@@ -24,25 +24,65 @@
 
     <title>The Peel Exchange</title>
 </head>
-<body class="min-h-screen flex flex-col">
-    <header class="p-6" >
-        <div class="flex flex-col items-center">
-            <img src="{% static 'logo.png' %}" alt="Nav Logo" class="h-32" />
+<body class="min-h-screen">
+    <div class="drawer">
+        <input id="site-drawer" type="checkbox" class="drawer-toggle" />
+
+        <div class="drawer-content flex flex-col min-h-screen">
+            <!-- Header with left drawer toggle, centered logo, right portfolio button -->
+            <header class="p-4 bg-base-100 border-b">
+                <div class="max-w-6xl mx-auto flex items-center justify-between">
+                    <div class="flex items-center">
+                        <label for="site-drawer" class="btn btn-ghost btn-circle" aria-label="Open menu">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                        </label>
+                    </div>
+
+                    <div class="flex-1 flex justify-center">
+                        <a href="{% url 'market-home' %}" class="inline-flex items-center">
+                            <img src="{% static 'logo.png' %}" alt="The Peel Exchange" class="h-16" />
+                        </a>
+                    </div>
+
+                    <div class="flex items-center">
+                        <a href="{% url 'market-portfolio' %}" class="btn btn-primary">Portfolio</a>
+                    </div>
+                </div>
+            </header>
+
+            <div class="w-full bg-base-200 border-t border-b overflow-hidden">
+                <div id="site-ticker" class="relative h-12 w-full">
+                    <div id="ticker-track" class="absolute left-0 top-0 h-12"></div>
+                </div>
+            </div>
+
+            <main class="flex-grow max-w-6xl mx-auto w-full p-6">
+                {% block content %}{% endblock %}
+            </main>
+<footer class="footer sm:footer-horizontal bg-warning text-primary-content items-center p-4">
+  <aside class="grid-flow-col items-center">
+    <img src="{% static 'square_logo.png' %}" alt="Footer Logo" class="h-12">
+    <p>Copyright © 2025 - All right reserved</p>
+  </aside>
+    </footer>
         </div>
-    </header>
-    <!-- DaisyUI/Tailwind ticker under header (full viewport width) -->
-    <div class="w-full bg-base-200 border-t border-b overflow-hidden">
-        <div id="site-ticker" class="relative h-12 w-full">
-            <div id="ticker-track" class="absolute left-0 top-0 h-12"></div>
+
+        <div class="drawer-side">
+            <label for="site-drawer" class="drawer-overlay"></label>
+            <aside class="w-64 bg-base-200 p-4">
+                <div class="mb-4 flex items-center justify-between">
+                    <h3 class="text-lg font-semibold">Menu</h3>
+                    <label for="site-drawer" class="btn btn-ghost btn-sm">✕</label>
+                </div>
+                <nav class="menu">
+                    <ul>
+                        <li><a href="{% url 'market-home' %}">Market</a></li>
+                        <li><a href="{% url 'market-portfolio' %}">Portfolio</a></li>
+                    </ul>
+                </nav>
+            </aside>
         </div>
     </div>
-    <main class="flex-grow">
-        {% block content %}{% endblock %}
-    </main>
-    <footer class=" p-6 mt-4" >
-        <div class="flex flex-col items-center">
-            <p class="text-lg">© 2025</p>
-        </div>
-    </footer>
+    
 </body>
 </html>

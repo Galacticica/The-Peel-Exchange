@@ -95,12 +95,28 @@ def portfolio(request):
 		price = float(h.stock.price)
 		shares = int(h.shares)
 		total = round(price * shares, 2)
+		# determine direction based on the two most recent history points
+		direction = 0
+		try:
+			history = list(h.stock.history.order_by('-timestamp')[:2])
+			if len(history) >= 2:
+				latest = history[0].price
+				prev = history[1].price
+				if latest > prev:
+					direction = 1
+				elif latest < prev:
+					direction = -1
+		except Exception:
+			# if anything goes wrong, leave direction as 0 (unknown/unchanged)
+			pass
+
 		holdings.append({
 			'name': h.stock.name,
 			'symbol': h.stock.symbol,
 			'price': round(price, 2),
 			'shares': shares,
 			'total': total,
+			'direction': direction,
 		})
 		stocks_total += total
 

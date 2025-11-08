@@ -18,6 +18,7 @@
 				<tr class="bg-gray-100">
 					<th class="px-4 py-2 text-left">Name</th>
 					<th class="px-4 py-2 text-left">Symbol</th>
+					<th class="px-4 py-2 text-left">Trend</th>
 					<th class="px-4 py-2 text-right">Price</th>
 					<th class="px-4 py-2 text-right">Quantity</th>
 					<th class="px-4 py-2 text-right">Total</th>
@@ -28,6 +29,15 @@
 				<tr class="border-t">
 					<td class="px-4 py-2">{{ h.name }}</td>
 					<td class="px-4 py-2">{{ h.symbol }}</td>
+					<td class="px-4 py-2">
+						{% if h.direction == 1 %}
+							<span class="text-green-600" title="Up">&#9650;</span>
+						{% elif h.direction == -1 %}
+							<span class="text-red-600" title="Down">&#9660;</span>
+						{% else %}
+							<span class="text-gray-500" title="No change">—</span>
+						{% endif %}
+					</td>
 					<td class="px-4 py-2 text-right">${{ h.price }}</td>
 					<td class="px-4 py-2 text-right">{{ h.shares }}</td>
 					<td class="px-4 py-2 text-right">${{ h.total }}</td>
