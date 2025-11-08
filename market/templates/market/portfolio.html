@@ -22,6 +22,7 @@
 					<th class="px-4 py-2 text-right">Price</th>
 					<th class="px-4 py-2 text-right">Quantity</th>
 					<th class="px-4 py-2 text-right">Total</th>
+					<th class="px-4 py-2 text-right">Sell</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -41,6 +42,13 @@
 					<td class="px-4 py-2 text-right">$<span class="portfolio-price" data-symbol="{{ h.symbol }}">{{ h.price }}</span></td>
 					<td class="px-4 py-2 text-right"><span class="portfolio-shares" data-symbol="{{ h.symbol }}">{{ h.shares }}</span></td>
 					<td class="px-4 py-2 text-right">$<span class="portfolio-total" data-symbol="{{ h.symbol }}">{{ h.total }}</span></td>
+					<td class="px-4 py-2 text-right">
+						<form class="sell-form" data-symbol="{{ h.symbol }}">
+							<input type="number" min="1" value="1" class="input input-sm input-bordered sell-amount" style="width:5rem; display:inline-block;" data-symbol="{{ h.symbol }}" />
+							<button type="submit" class="btn btn-sm btn-secondary sell-btn" data-symbol="{{ h.symbol }}">Sell</button>
+							<span class="sell-msg text-sm ml-2 text-red-600" data-symbol="{{ h.symbol }}"></span>
+						</form>
+					</td>
 				</tr>
 				{% endfor %}
 			</tbody>
@@ -53,6 +61,22 @@
 (function(){
 	const POLL_INTERVAL = 5000;
 	const TICKER_URL = '/api/ticker/';
+	const SELL_URL = '/api/sell/';
+
+	function getCookie(name) {
+		let cookieValue = null;
+		if (document.cookie && document.cookie !== '') {
+			const cookies = document.cookie.split(';');
+			for (let i = 0; i < cookies.length; i++) {
+				const cookie = cookies[i].trim();
+				if (cookie.substring(0, name.length + 1) === (name + '=')) {
+					cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+					break;
+				}
+			}
+		}
+		return cookieValue;
+	}
 
 	async function fetchAndUpdate(){
 		try{
@@ -103,9 +127,84 @@
 		}
 	}
 
+	async function sellOne(symbol, amount, msgEl){
+		if(!symbol) return;
+		amount = parseInt(amount, 10) || 0;
+		if(amount < 1){
+			if(msgEl) { msgEl.textContent = 'Enter a quantity of 1 or more.'; }
+			return;
+		}
+
+		try{
+			const res = await fetch(SELL_URL, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-CSRFToken': getCookie('csrftoken')
+				},
+				body: JSON.stringify({ symbol, amount })
+			});
+
+			const body = await res.json();
+			if(!res.ok){
+				if(msgEl) { msgEl.textContent = body.error || 'Sell failed'; }
+				setTimeout(()=> { if(msgEl) msgEl.textContent = ''; }, 4000);
+				return;
+			}
+
+			// update balance element
+			const balanceEl = document.getElementById('cash-balance');
+			if(balanceEl){
+				balanceEl.dataset.balance = body.balance;
+				balanceEl.textContent = Number(body.balance).toFixed(2);
+			}
+
+			// update holding row
+			const row = document.querySelector('tr[data-symbol="' + symbol + '"]');
+			if(row){
+				const sharesEl = row.querySelector('.portfolio-shares[data-symbol="' + symbol + '"]');
+				const totalEl = row.querySelector('.portfolio-total[data-symbol="' + symbol + '"]');
+				if(body.holding && body.holding.shares !== undefined){
+					const shares = parseInt(body.holding.shares, 10) || 0;
+					if(shares <= 0){
+						// remove row
+						row.parentNode.removeChild(row);
+					} else {
+						if(sharesEl) sharesEl.textContent = shares;
+						// recalc total based on current displayed price
+						const priceEl = row.querySelector('.portfolio-price[data-symbol="' + symbol + '"]');
+						const price = priceEl ? parseFloat(priceEl.textContent || '0') : 0;
+						const total = Math.round((price * shares + Number.EPSILON) * 100) / 100;
+						if(totalEl) totalEl.textContent = total.toFixed(2);
+					}
+				}
+
+			}
+
+			// clear any message and refresh ticker-derived totals
+			if(msgEl) { msgEl.textContent = 'Sold'; setTimeout(()=> { if(msgEl) msgEl.textContent = ''; }, 2000); }
+			fetchAndUpdate();
+
+		}catch(e){
+			if(msgEl) { msgEl.textContent = 'Sell failed (network)'; setTimeout(()=> { if(msgEl) msgEl.textContent = ''; }, 4000); }
+		}
+	}
+
 	document.addEventListener('DOMContentLoaded', function(){
 		fetchAndUpdate();
 		setInterval(fetchAndUpdate, POLL_INTERVAL);
+
+		// attach sell handlers
+		document.querySelectorAll('.sell-form').forEach(form => {
+			form.addEventListener('submit', function(evt){
+				evt.preventDefault();
+				const symbol = form.dataset.symbol;
+				const amountInput = form.querySelector('.sell-amount[data-symbol="' + symbol + '"]');
+				const msgEl = form.querySelector('.sell-msg[data-symbol="' + symbol + '"]');
+				const amount = amountInput ? amountInput.value : 0;
+				sellOne(symbol, amount, msgEl);
+			});
+		});
 	});
 })();
 </script>

@@ -192,6 +192,75 @@ def buy_stock(request):
 	})
 
 
+@login_required
+@require_POST
+def sell_stock(request):
+	"""Handle selling a stock for the logged-in user.
+
+	Expects JSON body: {"symbol": "ABC", "amount": 1}
+	Validations:
+	- amount must be integer >= 1
+	- user must own at least that many shares
+	- if user sells all shares, the Holding is deleted
+	"""
+	try:
+		payload = json.loads(request.body.decode('utf-8'))
+	except Exception:
+		return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+	symbol = payload.get('symbol')
+	amount = payload.get('amount')
+
+	try:
+		amount = int(amount)
+	except Exception:
+		return JsonResponse({'error': 'Invalid amount'}, status=400)
+
+	if amount < 1:
+		return JsonResponse({'error': 'Amount must be at least 1'}, status=400)
+
+	try:
+		stock = Stock.objects.get(symbol=symbol)
+	except Stock.DoesNotExist:
+		return JsonResponse({'error': 'Stock not found'}, status=404)
+
+	user = request.user
+
+	with transaction.atomic():
+		user.refresh_from_db()
+		try:
+			holding = Holding.objects.select_for_update().get(user=user, stock=stock)
+		except Holding.DoesNotExist:
+			return JsonResponse({'error': 'You do not own this stock'}, status=400)
+
+		if amount > holding.shares:
+			return JsonResponse({'error': 'Cannot sell more shares than owned', 'shares': holding.shares}, status=400)
+
+		proceeds = stock.price * amount
+
+		# add balance
+		user.balance = user.balance + proceeds
+		user.save()
+
+		# subtract or remove holding
+		remaining = holding.shares - amount
+		if remaining <= 0:
+			holding.delete()
+			remaining = 0
+		else:
+			holding.shares = remaining
+			holding.save()
+
+	return JsonResponse({
+		'success': True,
+		'balance': round(user.balance, 2),
+		'holding': {
+			'symbol': stock.symbol,
+			'shares': remaining,
+		}
+	})
+
+
 @require_GET
 def stock_history(request, symbol):
 	"""Return historical prices for a stock as a list of {timestamp, price}.
@@ -215,28 +284,5 @@ def stock_history(request, symbol):
 		})
 
 	return JsonResponse(data, safe=False)
-	@require_GET
-	def stock_history(request, symbol):
-		"""Return historical prices for a stock as a list of {timestamp, price}.
-
-		Returns up to 500 most recent entries ordered from oldest->newest.
-		"""
-		try:
-			stock = Stock.objects.get(symbol=symbol)
-		except Stock.DoesNotExist:
-			raise Http404("Stock not found")
-
-		history_qs = stock.history.order_by('-timestamp')[:500]
-		history = list(history_qs)
-		history.reverse()
-
-		data = []
-		for h in history:
-			data.append({
-				'timestamp': h.timestamp.isoformat(),
-				'price': round(h.price, 2),
-			})
-
-		return JsonResponse(data, safe=False)
 
 

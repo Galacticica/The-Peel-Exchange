@@ -9,8 +9,16 @@
 
 			<div class="mb-4">
 				<label class="block text-sm font-medium text-base-content mb-2">Stock</label>
-				<select id="stock-select" class="select select-bordered w-full">
-				</select>
+				<div class="flex gap-2 items-center">
+					<select id="sort-select" class="select select-bordered w-60">
+						<option value="symbol_asc">Symbol (A → Z)</option>
+						<option value="symbol_desc">Symbol (Z → A)</option>
+						<option value="price_desc">Price (High → Low)</option>
+						<option value="price_asc">Price (Low → High)</option>
+					</select>
+					<select id="stock-select" class="select select-bordered flex-1">
+					</select>
+				</div>
 			</div>
 
 			<div id="stock-card" class="p-4 rounded-lg bg-base-100 shadow-sm">
@@ -49,11 +57,12 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 (function(){
-    	const listUrl = '/api/stocks/';
+		const listUrl = '/api/stocks/';
     const detailUrl = (s) => `/api/stocks/${encodeURIComponent(s)}/`;
     const historyUrl = (s) => `/api/stocks/${encodeURIComponent(s)}/history/`;
     	const buyUrl = '/api/buy/';
     	const select = document.getElementById('stock-select');
+		const sortSelect = document.getElementById('sort-select');
     	const nameEl = document.getElementById('stock-name');
     	const symbolEl = document.getElementById('stock-symbol');
     	const priceEl = document.getElementById('stock-price');
@@ -76,6 +85,29 @@
 	let pollHandle = null;
 	let historyHandle = null;
 	let priceChart = null;
+	let cachedStocks = null; 
+
+	function sortStocks(list, mode){
+		if(!Array.isArray(list)) return list;
+		const copy = list.slice();
+		switch(mode){
+			case 'symbol_asc':
+				copy.sort((a,b) => a.symbol.localeCompare(b.symbol));
+				break;
+			case 'symbol_desc':
+				copy.sort((a,b) => b.symbol.localeCompare(a.symbol));
+				break;
+			case 'price_desc':
+				copy.sort((a,b) => (b.price||0) - (a.price||0));
+				break;
+			case 'price_asc':
+				copy.sort((a,b) => (a.price||0) - (b.price||0));
+				break;
+			default:
+				copy.sort((a,b) => a.symbol.localeCompare(b.symbol));
+		}
+		return copy;
+	}
 
 	function fmtPrice(p){ return `$${(p).toFixed(2)}`; }
 
@@ -84,16 +116,22 @@
 			const res = await fetch(listUrl, {cache: 'no-store'});
 			if(!res.ok) throw new Error('Failed to load stocks');
 			const stocks = await res.json();
-			populateSelect(stocks);
+			cachedStocks = stocks;
+			const mode = sortSelect ? sortSelect.value : 'symbol_asc';
+			populateSelect(sortStocks(stocks, mode));
 		}catch(e){
 			console.error('fetchStocks', e);
 		}
 	}
 
 	function populateSelect(stocks){
+		if(!Array.isArray(stocks)) stocks = [];
 		const existing = Array.from(select.options).map(o => o.value);
 		const newSymbols = stocks.map(s => s.symbol);
 		if(JSON.stringify(existing) === JSON.stringify(newSymbols)) return;
+
+		// remember currently selected symbol so we can try to preserve selection when resorting
+		const previous = select.value;
 
 		select.innerHTML = '';
 		stocks.forEach((s, idx) => {
@@ -103,10 +141,19 @@
 			select.appendChild(opt);
 		});
 
-		if(!currentSymbol && stocks.length>0){
+		// try to keep previous selection if it's still present
+		if(previous && newSymbols.includes(previous)){
+			select.value = previous;
+			currentSymbol = previous;
+			updateDetail(currentSymbol);
+		} else if(!currentSymbol && stocks.length>0){
 			select.value = stocks[0].symbol;
 			currentSymbol = stocks[0].symbol;
 			updateDetail(currentSymbol);
+		} else if(currentSymbol){
+			// keep currentSymbol but ensure the select's value reflects it if present
+			if(newSymbols.includes(currentSymbol)) select.value = currentSymbol;
+			else if(stocks.length>0){ select.value = stocks[0].symbol; currentSymbol = stocks[0].symbol; updateDetail(currentSymbol); }
 		}
 	}
 
@@ -215,6 +262,13 @@
 		historyHandle = setInterval(()=> updateHistory(currentSymbol), 5000);
 	});
 
+	if(sortSelect){
+		sortSelect.addEventListener('change', ()=>{
+			const mode = sortSelect.value;
+			const list = cachedStocks ? sortStocks(cachedStocks, mode) : [];
+			populateSelect(list);
+		});
+	}
 	document.addEventListener('DOMContentLoaded', ()=>{
 		fetchStocks();
 		pollHandle = setInterval(()=>{
