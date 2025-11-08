@@ -19,7 +19,8 @@
       </style>
 
       {% vite_hmr_client %}
-      {% vite_asset "static/src/app.js" %}
+    {% vite_asset "static/src/app.js" %}
+    {% vite_asset "static/src/ticker.js" %}
 
     <title>The Peel Exchange</title>
 </head>
@@ -29,6 +30,12 @@
             <img src="{% static 'logo.png' %}" alt="Nav Logo" class="h-32" />
         </div>
     </header>
+    <!-- DaisyUI/Tailwind ticker under header (full viewport width) -->
+    <div class="w-full bg-base-200 border-t border-b overflow-hidden">
+        <div id="site-ticker" class="relative h-12 w-full">
+            <div id="ticker-track" class="absolute left-0 top-0 h-12"></div>
+        </div>
+    </div>
     <main class="flex-grow">
         {% block content %}{% endblock %}
     </main>

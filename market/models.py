@@ -1,5 +1,6 @@
 from django.db import models
 import random
+from django.utils import timezone
 
 class Stock(models.Model):
     """Model representing a stock in the market."""
@@ -12,8 +13,27 @@ class Stock(models.Model):
         self.price = max(0.1, self.price * (1 + change))
         self.save()
 
+        StockPriceHistory.objects.create(stock=self, price=self.price)
+
+        history = self.history.order_by('-timestamp')
+        if history.count() > 500:
+            for old in history[500:]:
+                old.delete()
+
     def __str__(self):
         return f"{self.name} ({self.symbol}): ${self.price:.2f}"
+    
+class StockPriceHistory(models.Model):
+    """Model to keep track of stock price history."""
+    stock = models.ForeignKey('Stock', on_delete=models.CASCADE, related_name='history')
+    price = models.FloatField()
+    timestamp = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['timestamp']  
+
+    def __str__(self):
+        return f"{self.stock.symbol} @ {self.price:.2f} ({self.timestamp})"
 
 class Holding(models.Model):
     """Model representing a user's holding of a stock."""

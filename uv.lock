@@ -1,4 +1,5 @@
 version = 1
+revision = 1
 requires-python = ">=3.13"
 
 [[package]]
@@ -17,7 +18,9 @@ source = { virtual = "." }
 dependencies = [
     { name = "django" },
     { name = "django-browser-reload" },
+    { name = "django-crontab" },
     { name = "django-vite" },
+    { name = "psycopg2" },
     { name = "python-dotenv" },
 ]
 
@@ -25,7 +28,9 @@ dependencies = [
 requires-dist = [
     { name = "django", specifier = ">=5.2.8" },
     { name = "django-browser-reload", specifier = ">=1.21.0" },
+    { name = "django-crontab", specifier = ">=0.7.1" },
     { name = "django-vite", specifier = ">=3.1.0" },
+    { name = "psycopg2", specifier = ">=2.9.11" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
 ]
 
@@ -57,6 +62,15 @@ wheels = [
 ]
 
 [[package]]
+name = "django-crontab"
+version = "0.7.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/37/bd/a122ba96167f5dfab70a58ca22fa046b7ef1ebad9ff026f7831bd6c2a49c/django-crontab-0.7.1.tar.gz", hash = "sha256:1201810a212460aaaa48eb6a766738740daf42c1a4f6aafecfb1525036929236", size = 7089 }
+
+[[package]]
 name = "django-vite"
 version = "3.1.0"
 source = { registry = "https://pypi.org/simple" }
@@ -66,6 +80,16 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/23/fe/4be07f538bbf9bf8bf73b045552ec2a1b4fba67e3176abb30490b643368e/django_vite-3.1.0.tar.gz", hash = "sha256:8b4ffe4a9fa81ff568bfb195e74dde8694aaf13fd4b656ae60bf59cce08b85e8", size = 25434 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/30/59/7df4b1077fa41b43b4e542696d75138dbb86a65f44248c607b3e0f1014ce/django_vite-3.1.0-py3-none-any.whl", hash = "sha256:4e46572bd6b1ce70784be129205dc2ffcbc7a3c19fea50bebfb72b327bbde5fc", size = 23579 },
+]
+
+[[package]]
+name = "psycopg2"
+version = "2.9.11"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/89/8d/9d12bc8677c24dad342ec777529bce705b3e785fa05d85122b5502b9ab55/psycopg2-2.9.11.tar.gz", hash = "sha256:964d31caf728e217c697ff77ea69c2ba0865fa41ec20bb00f0977e62fdcc52e3", size = 379598 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/88/5a/18c8cb13fc6908dc41a483d2c14d927a7a3f29883748747e8cb625da6587/psycopg2-2.9.11-cp313-cp313-win_amd64.whl", hash = "sha256:8dc379166b5b7d5ea66dcebf433011dfc51a7bb8a5fc12367fa05668e5fc53c8", size = 2714048 },
+    { url = "https://files.pythonhosted.org/packages/47/08/737aa39c78d705a7ce58248d00eeba0e9fc36be488f9b672b88736fbb1f7/psycopg2-2.9.11-cp314-cp314-win_amd64.whl", hash = "sha256:f10a48acba5fe6e312b891f290b4d2ca595fc9a06850fe53320beac353575578", size = 2803738 },
 ]
 
 [[package]]

@@ -18,9 +18,12 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from market import views as market_views
 
 urlpatterns = [
     path('', include('accounts.urls')),
+    # API endpoint for ticker data
+    path('api/ticker/', market_views.ticker_data, name='ticker-data'),
     # path('', include('market.urls')),
     path('__reload__/', include('django_browser_reload.urls')),
     path('admin/', admin.site.urls),

@@ -3,3 +3,34 @@
 @plugin "daisyui" {
   themes: all;
 }
+
+/* Ticker animation styles */
+.ticker-animate {
+  /* default slow duration; can be overridden by JS via --ticker-duration */
+  animation: ticker-scroll var(--ticker-duration, 120s) linear infinite;
+}
+
+/* Ticker layout and animation */
+/* Track positioned absolutely across full viewport */
+#site-ticker { position: relative; overflow: hidden; }
+#ticker-track {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: inline-flex; /* keep items in one row */
+  align-items: center;
+  height: 100%;
+  white-space: nowrap;
+  will-change: transform;
+}
+.ticker-item {
+  flex: none; /* don't shrink */
+}
+
+/* small spacing between ticker items - very slight */
+.ticker-item { margin-right: 0.375rem; }
+
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
