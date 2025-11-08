@@ -4,7 +4,16 @@ import * as path from 'node:path'
 
 export default defineConfig({
     plugins: [tailwindcss()],
+    
     base: '/static/',
+    server: {
+        host: true,
+        port: 5173,
+
+        hmr: {
+            host: 'localhost',
+        }
+    },
     build: {
         manifest: "manifest.json",
         outDir: path.resolve('./static/dist'),
