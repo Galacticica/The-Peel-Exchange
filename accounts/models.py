@@ -31,6 +31,7 @@ class User(AbstractUser):
     """Custom user model with email as the unique identifier."""
     username = None  
     email = models.EmailField(unique=True)
+    balance = models.FloatField(default=100.0)
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 
@@ -40,11 +41,5 @@ class User(AbstractUser):
         return (self.first_name + " " + self.last_name).strip()
 
 
-class Profile(models.Model):
-    """Profile model linked to the User model."""
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    balance = models.FloatField(default=100.0)
 
-    def __str__(self):
-        return f"Profile of {self.user.email}"
     
