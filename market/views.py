@@ -83,6 +83,43 @@ def market_home(request):
 
 
 @login_required
+def portfolio(request):
+	"""Render the user's portfolio page with holdings and totals."""
+	user = request.user
+
+	# Fetch holdings and compute per-holding totals
+	holdings_qs = Holding.objects.filter(user=user).select_related('stock')
+	holdings = []
+	stocks_total = 0.0
+	for h in holdings_qs:
+		price = float(h.stock.price)
+		shares = int(h.shares)
+		total = round(price * shares, 2)
+		holdings.append({
+			'name': h.stock.name,
+			'symbol': h.stock.symbol,
+			'price': round(price, 2),
+			'shares': shares,
+			'total': total,
+		})
+		stocks_total += total
+
+	# Portfolio worth = cash balance + value of stocks
+	balance = float(user.balance or 0.0)
+	portfolio_worth = round(balance + stocks_total, 2)
+
+	context = {
+		'user_obj': user,
+		'balance': round(balance, 2),
+		'holdings': holdings,
+		'stocks_total': round(stocks_total, 2),
+		'portfolio_worth': portfolio_worth,
+	}
+
+	return render(request, 'market/portfolio.html', context)
+
+
+@login_required
 @require_POST
 def buy_stock(request):
 	"""Handle buying a stock for the logged-in user.
