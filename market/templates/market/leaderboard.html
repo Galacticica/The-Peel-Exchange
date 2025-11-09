@@ -6,7 +6,6 @@
 	<p class="text-center text-muted mb-6">Top 25 Traders by Total Portfolio Worth</p>
 
 	{% if top_users %}
-		<!-- Desktop table view (hidden on mobile) -->
 		<div class="hidden md:block overflow-x-auto">
 			<table class="table w-full">
 				<thead>
@@ -48,7 +47,6 @@
 			</table>
 		</div>
 
-		<!-- Mobile card view (hidden on desktop) -->
 		<div class="md:hidden space-y-4">
 			{% for user_data in top_users %}
 			<div class="card bg-base-100 shadow-md p-4 {% if user_data.rank <= 3 %}border-2 border-warning{% endif %}">

@@ -127,7 +127,6 @@
 		const newSymbols = stocks.map(s => s.symbol);
 		if(JSON.stringify(existing) === JSON.stringify(newSymbols)) return;
 
-		// remember currently selected symbol so we can try to preserve selection when resorting
 		const previous = select.value;
 
 		select.innerHTML = '';
@@ -138,7 +137,6 @@
 			select.appendChild(opt);
 		});
 
-		// try to keep previous selection if it's still present
 		if(previous && newSymbols.includes(previous)){
 			select.value = previous;
 			currentSymbol = previous;
@@ -148,7 +146,6 @@
 			currentSymbol = stocks[0].symbol;
 			updateDetail(currentSymbol);
 		} else if(currentSymbol){
-			// keep currentSymbol but ensure the select's value reflects it if present
 			if(newSymbols.includes(currentSymbol)) select.value = currentSymbol;
 			else if(stocks.length>0){ select.value = stocks[0].symbol; currentSymbol = stocks[0].symbol; updateDetail(currentSymbol); }
 		}
@@ -179,7 +176,6 @@
 			const data = h.map(item => item.price);
 			const ctx = document.getElementById('price-chart').getContext('2d');
 			if(!priceChart){
-				// Check if screen is mobile size
 				const isMobile = window.innerWidth < 640;
 				
 				priceChart = new Chart(ctx, {

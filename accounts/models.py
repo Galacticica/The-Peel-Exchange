@@ -1,3 +1,11 @@
+"""
+File: models.py
+Author: Reagan Zierke <reaganzierke@gmail.com>
+Date: 2025-11-08
+Description: Custom user model for the application.
+"""
+
+
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 
@@ -15,6 +23,7 @@ class UserManager(BaseUserManager):
         return user
 
     def create_superuser(self, email, password=None, **extra_fields):
+        """Create and return a superuser with the given email and password."""
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)

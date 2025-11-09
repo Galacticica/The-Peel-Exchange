@@ -1,3 +1,11 @@
+"""
+File: settings.py
+Author: Reagan Zierke <reaganzierke@gmail.com>
+Date: 2025-11-08
+Description: Django settings for the project.
+"""
+
+
 from pathlib import Path
 import os
 from dotenv import load_dotenv
@@ -5,14 +13,9 @@ from django.core.management.utils import get_random_secret_key
 
 load_dotenv()
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Quick-start development settings - unsuitable for production
-# https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-# SECURITY WARNING: don't run with debug turned on in production!
 load_dotenv(BASE_DIR / ".env")
 
 SECRET_KEY = os.environ.get("SECRET_KEY") or os.environ.get("DJANGO_SECRET_KEY") or get_random_secret_key()
@@ -33,7 +36,6 @@ CSRF_TRUSTED_ORIGINS = [
     f"https://{host}" for host in ALLOWED_HOSTS
 ]
 
-# Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -79,8 +81,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'conf.wsgi.application'
 
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -92,7 +93,6 @@ DATABASES = {
     }
 }
 
-# Support DATABASE_URL (common on hosts like Fly). Example: postgres://user:pwd@host:port/dbname
 from urllib.parse import urlparse
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if DATABASE_URL:
@@ -111,8 +111,7 @@ CRONJOBS = [
     ('*/5 * * * *', 'django.core.management.call_command', ['random_market_event']),
 ]
 
-# Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
+
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -120,28 +119,23 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'America/Chicago'
 USE_I18N = True
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
+
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [ BASE_DIR / "static" / "dist", BASE_DIR / "static" / "public" ]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# Use WhiteNoise for static file serving in production
 if not DEBUG:
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / "static" / "public"
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = "accounts.User"
@@ -152,15 +146,12 @@ LOGOUT_REDIRECT_URL = "/"
 
 DJANGO_VITE = {
     "default": {
-        "dev_mode": DEBUG,  # True locally, False on Fly
+        "dev_mode": DEBUG,  
         "manifest_path": BASE_DIR / "static" / "dist" / "manifest.json",
         "static_url_prefix": "/static/",
     }
 }
 
-# In production (after collectstatic), the manifest will be at STATIC_ROOT/manifest.json
-# because STATICFILES_DIRS includes "static/dist", so collectstatic copies the contents
-# of dist/ directly into STATIC_ROOT (not into a dist/ subdirectory)
 if not DEBUG:
     DJANGO_VITE["default"]["manifest_path"] = str(STATIC_ROOT / "manifest.json")
     DJANGO_VITE["default"]["static_url_prefix"] = ""

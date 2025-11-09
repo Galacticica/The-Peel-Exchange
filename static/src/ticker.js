@@ -1,9 +1,14 @@
+/*
+* File: ticker.js
+* Author: Reagan Zierke <reaganzierke@gmail.com>
+* Date: 2025-11-08
+* Description: JavaScript for the stock ticker and news bar functionality.
+*/
 import './app.css';
 
-// Ticker logic: poll `/api/ticker/` and render a continuously scrolling track.
-const TICKER_POLL_INTERVAL = 5000; // ms
+const TICKER_POLL_INTERVAL = 5000; 
 const TICKER_FETCH_URL = '/api/ticker/';
-const NEWS_POLL_INTERVAL = 30000; // ms
+const NEWS_POLL_INTERVAL = 30000; 
 const NEWS_FETCH_URL = '/api/latest-event/';
 
 function arrowForDirection(direction) {
@@ -45,7 +50,6 @@ function renderTicker(items) {
     const track = document.getElementById('ticker-track');
     if (!track) return;
 
-    // If not initialized or item count changed, build DOM nodes once (two copies)
     if (!__ticker_initialized || items.length !== __ticker_item_count) {
         track.innerHTML = '';
         if (items.length === 0) return;
@@ -57,12 +61,10 @@ function renderTicker(items) {
         __ticker_initialized = true;
         __ticker_item_count = items.length;
 
-        // ensure animation class is present (only add, don't restart on updates)
         if (!track.classList.contains('ticker-animate')) {
             track.classList.add('ticker-animate');
         }
     } else {
-        // Update existing nodes in-place to avoid restarting animation
         const children = track.children;
         const n = __ticker_item_count;
         for (let i = 0; i < n; i++) {
@@ -70,7 +72,6 @@ function renderTicker(items) {
             const el1 = children[i];
             const el2 = children[i + n];
             if (!el1 || !el2) continue;
-            // update symbol
             const sym1 = el1.querySelector('.ticker-symbol');
             const pr1 = el1.querySelector('.ticker-price');
             const ar1 = el1.querySelector('.ticker-arrow');
@@ -83,7 +84,6 @@ function renderTicker(items) {
             if (sym2) sym2.textContent = it.symbol;
             if (pr2) pr2.textContent = `${(typeof it.price === 'number' ? it.price.toFixed(2) : parseFloat(it.price).toFixed(2))} 🍌`;
             if (ar2) ar2.textContent = arrowForDirection(it.direction);
-                // update color class based on direction (use ticker-specific classes)
                 el1.classList.remove('ticker-up', 'ticker-down', 'ticker-neutral');
                 el2.classList.remove('ticker-up', 'ticker-down', 'ticker-neutral');
                 const cls = it.direction > 0 ? 'ticker-up' : (it.direction < 0 ? 'ticker-down' : 'ticker-neutral');
@@ -92,17 +92,14 @@ function renderTicker(items) {
         }
     }
 
-    // compute slow duration and translate distance so the ticker scrolls across the full viewport
     try {
-        const totalWidth = track.scrollWidth || 0; // duplicated content width
-        const contentHalf = totalWidth / 2 || 0; // width of one copy
+        const totalWidth = track.scrollWidth || 0; 
+        const contentHalf = totalWidth / 2 || 0;
         const viewport = window.innerWidth || document.documentElement.clientWidth || 0;
 
-        // distance to move so that content has fully passed the viewport: contentHalf + viewport
         const translatePx = -(contentHalf + viewport);
 
-        // choose a slow speed in pixels/sec
-        const speedPxPerSec = 8; // lower => slower
+        const speedPxPerSec = 8; 
         let durationSec = Math.abs((contentHalf + viewport) / speedPxPerSec);
         if (!isFinite(durationSec) || durationSec < 40) durationSec = 40;
         if (durationSec > 600) durationSec = 600;
@@ -110,7 +107,7 @@ function renderTicker(items) {
         track.style.setProperty('--ticker-duration', `${durationSec}s`);
         track.style.setProperty('--ticker-translate', `${translatePx}px`);
     } catch (e) {
-        // ignore
+        // decorative: ignore errors
     }
 }
 
@@ -136,7 +133,6 @@ function renderNews(eventObj) {
     }
 
     const ev = eventObj.event;
-    // parse created_at and determine age
     let createdAt = null;
     try {
         createdAt = Date.parse(ev.created_at);
@@ -152,7 +148,6 @@ function renderNews(eventObj) {
         return true;
     }
 
-    // prefer server-rendered text (placeholder replaced). fall back to name+text
     const rendered = ev.rendered_text || null;
     if (rendered) {
         el.textContent = rendered;
@@ -170,11 +165,8 @@ async function fetchNewsAndUpdate() {
         const res = await fetch(NEWS_FETCH_URL, { cache: 'no-store' });
         if (!res.ok) return;
         const data = await res.json();
-        // Try to render; if the news element isn't present yet, observe the DOM and
-        // render once it appears (helps when this script runs before template insertion).
         const didRender = renderNews(data);
         if (!didRender) {
-            // wait for the element to be added to the DOM, then render once
             const observer = new MutationObserver((mutations, obs) => {
                 const el = document.getElementById('news-bar-text');
                 if (el) {
@@ -183,11 +175,9 @@ async function fetchNewsAndUpdate() {
                 }
             });
             observer.observe(document.documentElement || document.body, { childList: true, subtree: true });
-            // safety: stop observing after 10s
             setTimeout(() => observer.disconnect(), 10000);
         }
     } catch (e) {
-        // transient network error: try again shortly to avoid long gaps
         setTimeout(fetchNewsAndUpdate, 5000);
     }
 }
@@ -196,12 +186,9 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchAndUpdate();
     setInterval(fetchAndUpdate, TICKER_POLL_INTERVAL);
 
-    // News bar: fetch initially and poll periodically
     fetchNewsAndUpdate();
     setInterval(fetchNewsAndUpdate, NEWS_POLL_INTERVAL);
 
-    // When the page becomes visible again (or regains focus), fetch immediately
-    // so the news line updates promptly after tab switches / background throttling.
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') fetchNewsAndUpdate();
     });

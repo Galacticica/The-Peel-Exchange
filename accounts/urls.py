@@ -1,3 +1,11 @@
+"""
+File: urls.py
+Author: Reagan Zierke <reaganzierke@gmail.com>
+Date: 2025-11-08
+Description: URLs for user authentication and registration.
+"""
+
+
 from django.urls import path
 from .views import MyLoginView, MySignupView, MyLogoutView
 

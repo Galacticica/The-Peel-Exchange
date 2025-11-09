@@ -2,7 +2,7 @@
 File: urls.py
 Author: Reagan Zierke
 Date: 2025-11-08
-Description: description
+Description: URLs for the market app.
 """
 
 from django.urls import path, include

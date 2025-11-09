@@ -1,8 +1,17 @@
+"""
+File: forms.py
+Author: Reagan Zierke <reaganzierke@gmail.com>
+Date: 2025-11-08
+Description: Forms for user authentication and registration.
+"""
+
+
 from django import forms
 from django.contrib.auth import authenticate as auth_authenticate
 
 
 class LoginForm(forms.Form):
+    """Form for user login."""
     email = forms.EmailField(
         max_length=254,
         required=True, 
@@ -21,6 +30,7 @@ class LoginForm(forms.Form):
         self.request = request
     
     def clean(self):
+        """Authenticate user credentials."""
         self.user_cache = auth_authenticate(
            self.request,
            username=self.cleaned_data.get("email"),
@@ -34,7 +44,7 @@ class LoginForm(forms.Form):
     
 
 class SignupForm(forms.Form):
-
+    """Form for user registration."""
     email = forms.EmailField(
         max_length=254,
         required=True,
@@ -67,6 +77,7 @@ class SignupForm(forms.Form):
     )
 
     def clean(self):
+        """Validate the form data."""
         cleaned_data = super().clean()
         password = cleaned_data.get("password")
         confirm_password = cleaned_data.get("confirm_password")

@@ -1,3 +1,11 @@
+"""
+File: views.py
+Author: Reagan Zierke <reaganzierke@gmail.com>
+Date: 2025-11-08
+Description: Views for the market app
+"""
+
+
 from django.shortcuts import render
 from django.http import JsonResponse, Http404
 from django.views.decorators.http import require_GET, require_POST
@@ -93,7 +101,6 @@ def portfolio(request):
 	"""Render the user's portfolio page with holdings and totals."""
 	user = request.user
 
-	# Fetch holdings and compute per-holding totals
 	holdings_qs = Holding.objects.filter(user=user).select_related('stock')
 	holdings = []
 	stocks_total = 0.0
@@ -101,7 +108,6 @@ def portfolio(request):
 		price = float(h.stock.price)
 		shares = int(h.shares)
 		total = round(price * shares, 2)
-		# determine direction based on the two most recent history points
 		direction = 0
 		try:
 			history = list(h.stock.history.order_by('-timestamp')[:2])
@@ -113,7 +119,6 @@ def portfolio(request):
 				elif latest < prev:
 					direction = -1
 		except Exception:
-			# if anything goes wrong, leave direction as 0 (unknown/unchanged)
 			pass
 
 		holdings.append({
@@ -126,7 +131,6 @@ def portfolio(request):
 		})
 		stocks_total += total
 
-	# Portfolio worth = cash balance + value of stocks
 	balance = float(user.balance or 0.0)
 	portfolio_worth = round(balance + stocks_total, 2)
 
@@ -174,12 +178,10 @@ def buy_stock(request):
 	user = request.user
 
 	with transaction.atomic():
-		# reload fresh balance
 		user.refresh_from_db()
 		if user.balance < cost:
 			return JsonResponse({'error': 'Insufficient funds', 'balance': user.balance}, status=400)
 
-		# subtract balance
 		user.balance = user.balance - cost
 		user.save()
 
@@ -244,11 +246,9 @@ def sell_stock(request):
 
 		proceeds = stock.price * amount
 
-		# add balance
 		user.balance = user.balance + proceeds
 		user.save()
 
-		# subtract or remove holding
 		remaining = holding.shares - amount
 		if remaining <= 0:
 			holding.delete()
@@ -311,7 +311,6 @@ def latest_event(request):
 	ev = app.event
 	stock = app.stock
 
-	# safely render {company} placeholder using escaped stock name
 	try:
 		rendered = ev.text.replace('{company}', escape(stock.name))
 	except Exception:
@@ -338,18 +337,14 @@ def latest_event(request):
 @login_required
 def leaderboard(request):
 	"""Display the top 25 users by total portfolio worth."""
-	# Calculate portfolio worth for all users
 	users_data = []
 	
 	for user in User.objects.all():
-		# Get user's cash balance
 		balance = float(user.balance or 0.0)
 		
-		# Calculate total value of stocks
 		holdings = Holding.objects.filter(user=user).select_related('stock')
 		stocks_total = sum(float(h.stock.price) * int(h.shares) for h in holdings)
 		
-		# Total portfolio worth = cash + stocks
 		portfolio_worth = balance + stocks_total
 		
 		users_data.append({
@@ -359,11 +354,9 @@ def leaderboard(request):
 			'portfolio_worth': portfolio_worth,
 		})
 	
-	# Sort by portfolio worth (descending) and take top 25
 	users_data.sort(key=lambda x: x['portfolio_worth'], reverse=True)
 	top_users = users_data[:25]
 	
-	# Add rank to each user
 	for i, user_data in enumerate(top_users, 1):
 		user_data['rank'] = i
 	
@@ -385,30 +378,24 @@ def admin_force_event(request):
 		payload = json.loads(request.body.decode('utf-8'))
 		impact_level = payload.get('impact_level', 'minor')
 		
-		# Validate impact level
 		valid_levels = ['minor', 'moderate', 'major', 'severe']
 		if impact_level not in valid_levels:
 			return JsonResponse({'error': 'Invalid impact level'}, status=400)
 		
-		# Get events of the specified impact level
 		events = MarketEvent.objects.filter(impact_level=impact_level)
 		if not events.exists():
 			return JsonResponse({'error': f'No events found for impact level: {impact_level}'}, status=404)
 		
-		# Randomly select an event
 		event = random.choice(events)
 		
-		# Randomly select a stock to affect
 		stocks = Stock.objects.all()
 		if not stocks.exists():
 			return JsonResponse({'error': 'No stocks available'}, status=404)
 		
 		stock = random.choice(stocks)
 		
-		# Apply the event
 		event.apply_event(stock=stock)
 		
-		# Record the application
 		MarketEventApplication.objects.create(event=event, stock=stock)
 		
 		return JsonResponse({

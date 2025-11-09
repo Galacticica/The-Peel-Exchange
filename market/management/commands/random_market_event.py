@@ -1,3 +1,11 @@
+"""
+File: random_market_event.py
+Author: Reagan Zierke <reaganzierke@gmail.com>
+Date: 2025-11-08
+Description: Command to randomly apply a market event to a stock.
+"""
+
+
 from django.core.management.base import BaseCommand
 from market.models import Stock, MarketEvent, MarketEventApplication
 from django.utils import timezone

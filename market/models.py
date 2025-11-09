@@ -1,3 +1,11 @@
+"""
+File: models.py
+Author: Reagan Zierke <reaganzierke@gmail.com>
+Date: 2025-11-08
+Description: Models for the market app.
+"""
+
+
 from django.db import models
 import random
 from django.utils import timezone
@@ -9,6 +17,7 @@ class Stock(models.Model):
     price = models.FloatField(default=10.0)
     
     def random_fluctuate(self):
+        """Randomly fluctuate the stock price and maintain price history."""
         change = random.uniform(-0.05, 0.05)
         self.price = max(0.1, self.price * (1 + change))
         self.save()
@@ -61,6 +70,7 @@ class MarketEvent(models.Model):
     impact_high = models.FloatField()
     
     def apply_event(self, stock):
+        """Apply the market event to a given stock."""
         impact = random.uniform(self.impact_low, self.impact_high)
         stock.price = max(0.1, stock.price * (1 + impact))
         stock.save()
