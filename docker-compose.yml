@@ -8,6 +8,8 @@ services:
     environment:
       - DJANGO_SETTINGS_MODULE=conf.settings
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-devsecretkey}
+      - SECRET_KEY=${DJANGO_SECRET_KEY:-devsecretkey}
+      - DEBUG=1
       - DATABASE_URL
     volumes:
       - .:/app:cached

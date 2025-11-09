@@ -15,10 +15,23 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: don't run with debug turned on in production!
 load_dotenv(BASE_DIR / ".env")
 
-SECRET_KEY = os.environ.get("SECRET_KEY", get_random_secret_key())
+SECRET_KEY = os.environ.get("SECRET_KEY") or os.environ.get("DJANGO_SECRET_KEY") or get_random_secret_key()
 DEBUG = os.environ.get("DEBUG", "0") == "1"
 
-ALLOWED_HOSTS = []
+SECURE_SSL_REDIRECT = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+raw_allowed = os.environ.get("ALLOWED_HOSTS", "")
+if raw_allowed:
+    ALLOWED_HOSTS = [h.strip() for h in raw_allowed.split(",") if h.strip()]
+else:
+    ALLOWED_HOSTS = []
+
+CSRF_TRUSTED_ORIGINS = [
+    f"https://{host}" for host in ALLOWED_HOSTS
+]
 
 # Application definition
 INSTALLED_APPS = [
@@ -37,6 +50,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -78,6 +92,20 @@ DATABASES = {
     }
 }
 
+# Support DATABASE_URL (common on hosts like Fly). Example: postgres://user:pwd@host:port/dbname
+from urllib.parse import urlparse
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL:
+    result = urlparse(DATABASE_URL)
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': result.path.lstrip('/'),
+        'USER': result.username,
+        'PASSWORD': result.password,
+        'HOST': result.hostname,
+        'PORT': result.port,
+    }
+
 CRONJOBS = [
     ('* * * * *', 'django.core.management.call_command', ['update_stocks']),
     ('*/5 * * * *', 'django.core.management.call_command', ['random_market_event']),
@@ -105,6 +133,10 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [ BASE_DIR / "static" / "dist", BASE_DIR / "static" / "public" ]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# Use WhiteNoise for static file serving in production
+if not DEBUG:
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / "static" / "public"
 
@@ -120,6 +152,17 @@ LOGOUT_REDIRECT_URL = "/"
 
 DJANGO_VITE = {
     "default": {
-        "dev_mode": DEBUG,
+        "dev_mode": DEBUG,  # True locally, False on Fly
+        "manifest_path": BASE_DIR / "static" / "dist" / "manifest.json",
+        "static_url_prefix": "/static/",
     }
 }
+
+# In production (after collectstatic), the manifest will be at STATIC_ROOT/manifest.json
+# because STATICFILES_DIRS includes "static/dist", so collectstatic copies the contents
+# of dist/ directly into STATIC_ROOT (not into a dist/ subdirectory)
+if not DEBUG:
+    DJANGO_VITE["default"]["manifest_path"] = str(STATIC_ROOT / "manifest.json")
+    DJANGO_VITE["default"]["static_url_prefix"] = ""
+
+

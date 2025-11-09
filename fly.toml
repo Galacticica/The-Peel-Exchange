@@ -1,0 +1,36 @@
+app = "peel-exchange"
+primary_region = "ord"
+
+[build]
+  # Uses the Dockerfile in the repo by default.
+  # You can set "builder" or "image" here if you prefer custom build behavior.
+
+[env]
+  DJANGO_SETTINGS_MODULE = "conf.settings"
+  # Do NOT add SECRET_KEY or DATABASE_URL here — set them as Fly secrets instead.
+
+[deploy]
+  # Run migrations and collectstatic before the release becomes healthy
+  # Use a shell so && is interpreted correctly by the remote executor
+  release_command = "bash -lc 'python manage.py migrate --noinput && python manage.py collectstatic --noinput'"
+
+# Tell Fly how to route incoming requests to the container.
+# Gunicorn will bind to the PORT env var at runtime; internal_port should match that (8000 is fine).
+[[services]]
+  internal_port = 8000
+  protocol = "tcp"
+
+  [[services.ports]]
+    handlers = ["http"]
+    port = 80
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
+
+  [services.tcp_checks]
+    # optional healthcheck (adjust path/port as needed)
+    timeout = 2000
+    interval = 10000
+    grace_period = "5s"
+    restart_limit = 0
