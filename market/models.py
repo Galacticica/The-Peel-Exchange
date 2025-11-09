@@ -15,12 +15,21 @@ class Stock(models.Model):
     name = models.CharField(max_length=100)
     symbol = models.CharField(max_length=10, unique=True)
     price = models.FloatField(default=10.0)
+    volatility_min = models.FloatField(null=True, blank=True)
+    volatility_max = models.FloatField(null=True, blank=True)
+    
+    def save(self, *args, **kwargs):
+        """Override save to set random volatility if not already set."""
+        if self.volatility_min is None or self.volatility_max is None:
+            self.volatility_min = -1 * random.uniform(0.05, 0.15)
+            self.volatility_max = random.uniform(0.05, 0.15)
+        super().save(*args, **kwargs)
     
     def random_fluctuate(self):
         """Randomly fluctuate the stock price and maintain price history."""
-        change = random.uniform(-0.05, 0.05)
+        change = random.uniform(self.volatility_min, self.volatility_max)
         self.price = max(0.1, self.price * (1 + change))
-        self.save()
+        super().save()  
 
         StockPriceHistory.objects.create(stock=self, price=self.price)
 
@@ -72,7 +81,7 @@ class MarketEvent(models.Model):
     def apply_event(self, stock):
         """Apply the market event to a given stock."""
         impact = random.uniform(self.impact_low, self.impact_high)
-        stock.price = max(0.1, stock.price * (1 + impact))
+        stock.price = max(0.1, stock.price * (1 + (1.2*impact)))
         stock.save()
 
     def __str__(self):
