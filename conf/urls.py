@@ -30,6 +30,10 @@ urlpatterns = [
     path('api/latest-event/', market_views.latest_event, name='latest-event'),
     path('api/buy/', market_views.buy_stock, name='buy-stock'),
     path('api/sell/', market_views.sell_stock, name='sell-stock'),
+    # Admin API endpoints
+    path('api/admin/force-event/', market_views.admin_force_event, name='admin-force-event'),
+    path('api/admin/add-money/', market_views.admin_add_money, name='admin-add-money'),
+    path('api/admin/users/', market_views.admin_list_users, name='admin-list-users'),
     path('', include('market.urls')),
     path('__reload__/', include('django_browser_reload.urls')),
     path('admin/', admin.site.urls),

@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.http import JsonResponse, Http404
 from django.views.decorators.http import require_GET, require_POST
 from django.contrib.auth.decorators import login_required
+from django.contrib.admin.views.decorators import staff_member_required
 from market.models import Stock, Holding, MarketEvent, MarketEventApplication
 from django.utils.html import escape
 from django.db import transaction
@@ -9,6 +10,7 @@ from django.db.models import Sum, F, FloatField, Value
 from django.db.models.functions import Coalesce
 from accounts.models import User
 import json
+import random
 
 
 @require_GET
@@ -370,6 +372,120 @@ def leaderboard(request):
 	}
 	
 	return render(request, 'market/leaderboard.html', context)
+
+
+@staff_member_required
+@require_POST
+def admin_force_event(request):
+	"""Admin endpoint to force a market event of a specific impact level.
+	
+	Expects JSON body: {"impact_level": "minor|moderate|major|severe"}
+	"""
+	try:
+		payload = json.loads(request.body.decode('utf-8'))
+		impact_level = payload.get('impact_level', 'minor')
+		
+		# Validate impact level
+		valid_levels = ['minor', 'moderate', 'major', 'severe']
+		if impact_level not in valid_levels:
+			return JsonResponse({'error': 'Invalid impact level'}, status=400)
+		
+		# Get events of the specified impact level
+		events = MarketEvent.objects.filter(impact_level=impact_level)
+		if not events.exists():
+			return JsonResponse({'error': f'No events found for impact level: {impact_level}'}, status=404)
+		
+		# Randomly select an event
+		event = random.choice(events)
+		
+		# Randomly select a stock to affect
+		stocks = Stock.objects.all()
+		if not stocks.exists():
+			return JsonResponse({'error': 'No stocks available'}, status=404)
+		
+		stock = random.choice(stocks)
+		
+		# Apply the event
+		event.apply_event(stock=stock)
+		
+		# Record the application
+		MarketEventApplication.objects.create(event=event, stock=stock)
+		
+		return JsonResponse({
+			'success': True,
+			'event': event.text,
+			'stock': stock.symbol,
+			'impact_level': impact_level,
+			'new_price': round(stock.price, 2)
+		})
+		
+	except json.JSONDecodeError:
+		return JsonResponse({'error': 'Invalid JSON'}, status=400)
+	except Exception as e:
+		return JsonResponse({'error': str(e)}, status=500)
+
+
+@staff_member_required
+@require_POST
+def admin_add_money(request):
+	"""Admin endpoint to add money to a specified user's account.
+	
+	Expects JSON body: {"user_id": 1, "amount": 1000.0}
+	"""
+	try:
+		payload = json.loads(request.body.decode('utf-8'))
+		user_id = payload.get('user_id')
+		amount = float(payload.get('amount', 0))
+		
+		if not user_id:
+			return JsonResponse({'error': 'User ID is required'}, status=400)
+		
+		if amount <= 0:
+			return JsonResponse({'error': 'Amount must be positive'}, status=400)
+		
+		try:
+			target_user = User.objects.get(id=user_id)
+		except User.DoesNotExist:
+			return JsonResponse({'error': 'User not found'}, status=404)
+		
+		target_user.balance = float(target_user.balance or 0.0) + amount
+		target_user.save()
+		
+		return JsonResponse({
+			'success': True,
+			'user_name': target_user.get_full_name() or target_user.email,
+			'added': round(amount, 2),
+			'new_balance': round(target_user.balance, 2)
+		})
+		
+	except (json.JSONDecodeError, ValueError):
+		return JsonResponse({'error': 'Invalid data'}, status=400)
+	except Exception as e:
+		return JsonResponse({'error': str(e)}, status=500)
+
+
+@staff_member_required
+@require_GET
+def admin_list_users(request):
+	"""Admin endpoint to get a list of all users with their balances.
+	
+	Returns JSON array of users with id, name, email, and balance.
+	"""
+	try:
+		users_data = []
+		for user in User.objects.all().order_by('email'):
+			users_data.append({
+				'id': user.id,
+				'name': user.get_full_name() or 'No Name',
+				'email': user.email,
+				'balance': round(float(user.balance or 0.0), 2)
+			})
+		
+		return JsonResponse({'users': users_data})
+		
+	except Exception as e:
+		return JsonResponse({'error': str(e)}, status=500)
+
 
 
 

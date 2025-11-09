@@ -71,6 +71,211 @@
     </footer>
         </div>
 
+        {% if user.is_superuser %}
+        <!-- Admin Panel Drawer -->
+        <div class="drawer drawer-end">
+            <input id="admin-drawer" type="checkbox" class="drawer-toggle" />
+            
+            <div class="drawer-content">
+                <label for="admin-drawer" class="btn btn-circle btn-warning fixed bottom-6 right-6 text-2xl shadow-lg z-50 cursor-pointer">
+                    🐒
+                </label>
+            </div>
+
+            <div class="drawer-side z-50">
+                <label for="admin-drawer" class="drawer-overlay"></label>
+                <aside class="w-80 bg-base-100 p-6 min-h-screen shadow-xl">
+                    <div class="mb-4 flex items-center justify-between">
+                        <h3 class="text-xl font-bold">🐒 Monkey Panel</h3>
+                        <label for="admin-drawer" class="btn btn-ghost btn-sm">✕</label>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="card bg-base-200">
+                            <div class="card-body p-4">
+                                <h4 class="card-title text-sm">Force Market Event</h4>
+                                <div class="space-y-2">
+                                    <button onclick="forceEvent('minor')" class="btn btn-sm btn-info w-full">
+                                        Slight Impact Event
+                                    </button>
+                                    <button onclick="forceEvent('moderate')" class="btn btn-sm btn-warning w-full">
+                                        Moderate Impact Event
+                                    </button>
+                                    <button onclick="forceEvent('major')" class="btn btn-sm btn-error w-full">
+                                        Major Impact Event
+                                    </button>
+                                    <button onclick="forceEvent('severe')" class="btn btn-sm btn-error w-full bg-red-700 hover:bg-red-800 border-red-700">
+                                        Severe Impact Event
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card bg-base-200">
+                            <div class="card-body p-4">
+                                <h4 class="card-title text-sm">Add Money</h4>
+                                <div class="form-control">
+                                    <label class="label">
+                                        <span class="label-text">Select User</span>
+                                    </label>
+                                    <select id="admin-user-select" class="select select-bordered select-sm w-full">
+                                        <option value="">Loading users...</option>
+                                    </select>
+                                </div>
+                                <div class="form-control mt-2">
+                                    <label class="label">
+                                        <span class="label-text">Amount ($)</span>
+                                    </label>
+                                    <input type="number" id="admin-money-amount" placeholder="1000" class="input input-bordered input-sm" step="100" min="0" value="1000">
+                                </div>
+                                <button onclick="addMoney()" class="btn btn-sm btn-success w-full mt-2">
+                                    💰 Add Money to Account
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="card bg-base-200">
+                            <div class="card-body p-4">
+                                <h4 class="card-title text-sm">Current Status</h4>
+                                <div class="text-xs space-y-1">
+                                    <p><strong>User:</strong> {{ user.get_full_name }}</p>
+                                    <p><strong>Balance:</strong> ${{ user.balance|floatformat:2 }}</p>
+                                    <p><strong>Superuser:</strong> ✓</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="admin-feedback" class="alert hidden" role="alert">
+                            <span id="admin-feedback-text"></span>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+
+        <script>
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+
+            function showAdminFeedback(message, isError = false) {
+                const feedback = document.getElementById('admin-feedback');
+                const feedbackText = document.getElementById('admin-feedback-text');
+                
+                feedback.classList.remove('hidden', 'alert-success', 'alert-error');
+                feedback.classList.add(isError ? 'alert-error' : 'alert-success');
+                feedbackText.textContent = message;
+                
+                setTimeout(() => {
+                    feedback.classList.add('hidden');
+                }, 5000);
+            }
+
+            async function loadUsers() {
+                try {
+                    const response = await fetch('/api/admin/users/');
+                    const data = await response.json();
+                    
+                    const select = document.getElementById('admin-user-select');
+                    select.innerHTML = '';
+                    
+                    data.users.forEach(user => {
+                        const option = document.createElement('option');
+                        option.value = user.id;
+                        option.textContent = `${user.name} - $${user.balance}`;
+                        select.appendChild(option);
+                    });
+                } catch (error) {
+                    console.error('Error loading users:', error);
+                }
+            }
+
+            document.getElementById('admin-drawer')?.addEventListener('change', function(e) {
+                if (e.target.checked) {
+                    loadUsers();
+                }
+            });
+
+            async function forceEvent(impactLevel) {
+                try {
+                    const response = await fetch('/api/admin/force-event/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify({ impact_level: impactLevel })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        showAdminFeedback(`Event applied: ${data.event} → ${data.stock}`);
+                        setTimeout(() => window.location.reload(), 2000);
+                    } else {
+                        showAdminFeedback(data.error || 'Failed to apply event', true);
+                    }
+                } catch (error) {
+                    showAdminFeedback('Error: ' + error.message, true);
+                }
+            }
+
+            async function addMoney() {
+                const userId = document.getElementById('admin-user-select').value;
+                const amount = parseFloat(document.getElementById('admin-money-amount').value);
+                
+                if (!userId) {
+                    showAdminFeedback('Please select a user', true);
+                    return;
+                }
+                
+                if (!amount || amount <= 0) {
+                    showAdminFeedback('Please enter a valid amount', true);
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/admin/add-money/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify({ 
+                            user_id: userId,
+                            amount: amount 
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        showAdminFeedback(`Added $${amount} to ${data.user_name}. New balance: $${data.new_balance}`);
+                        setTimeout(() => {
+                            loadUsers();
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        showAdminFeedback(data.error || 'Failed to add money', true);
+                    }
+                } catch (error) {
+                    showAdminFeedback('Error: ' + error.message, true);
+                }
+            }
+        </script>
+        {% endif %}
+
         <div class="drawer-side">
             <label for="site-drawer" class="drawer-overlay"></label>
             <aside class="w-64 bg-base-200 p-4">
