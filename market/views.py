@@ -2,7 +2,8 @@ from django.shortcuts import render
 from django.http import JsonResponse, Http404
 from django.views.decorators.http import require_GET, require_POST
 from django.contrib.auth.decorators import login_required
-from market.models import Stock, Holding
+from market.models import Stock, Holding, MarketEvent, MarketEventApplication
+from django.utils.html import escape
 from django.db import transaction
 import json
 
@@ -284,5 +285,48 @@ def stock_history(request, symbol):
 		})
 
 	return JsonResponse(data, safe=False)
+
+
+@require_GET
+def latest_event(request):
+	"""Return the most recent MarketEventApplication as JSON.
+
+	If an application exists, return both event and stock fields plus a
+	server-rendered `rendered_text` where {company} is replaced with the
+	affected stock's name. If none exist, return {'event': None}.
+	"""
+	try:
+		app = MarketEventApplication.objects.select_related('event', 'stock').order_by('-created_at').first()
+	except Exception:
+		app = None
+
+	if not app:
+		return JsonResponse({'event': None})
+
+	ev = app.event
+	stock = app.stock
+
+	# safely render {company} placeholder using escaped stock name
+	try:
+		rendered = ev.text.replace('{company}', escape(stock.name))
+	except Exception:
+		rendered = ev.text
+
+	data = {
+		'application_id': app.id,
+		'id': ev.id,
+		'text': ev.text,
+		'rendered_text': rendered,
+		'impact_level': ev.impact_level,
+		'created_at': app.created_at.isoformat(),
+		'stock': {
+			'id': stock.id,
+			'symbol': stock.symbol,
+			'name': stock.name,
+			'price': round(stock.price, 2),
+		}
+	}
+
+	return JsonResponse({'event': data})
 
 

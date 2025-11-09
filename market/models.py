@@ -46,7 +46,6 @@ class Holding(models.Model):
 
 class MarketEvent(models.Model):
     """Model representing a market event that can impact stock prices."""
-    name = models.CharField(max_length=100)
     text = models.CharField(max_length=200)
     impact_level = models.CharField(
         max_length=50,
@@ -60,7 +59,6 @@ class MarketEvent(models.Model):
     )
     impact_low = models.FloatField()
     impact_high = models.FloatField()
-    created_at = models.DateTimeField(auto_now_add=True)
     
     def apply_event(self, stock):
         impact = random.uniform(self.impact_low, self.impact_high)
@@ -68,5 +66,21 @@ class MarketEvent(models.Model):
         stock.save()
 
     def __str__(self):
-        return f"{self.name} (Impact: {self.impact_low} - {self.impact_high})"
+        return f"{self.text} (Impact: {self.impact_low} - {self.impact_high})"
+
+
+class MarketEventApplication(models.Model):
+    """Record that a MarketEvent was applied to a specific Stock at a given time.
+
+    This makes it easy to show the latest applied event and the affected stock.
+    """
+    event = models.ForeignKey(MarketEvent, on_delete=models.CASCADE, related_name='applications')
+    stock = models.ForeignKey(Stock, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.event.text} -> {self.stock.symbol} @ {self.created_at.isoformat()}"
 

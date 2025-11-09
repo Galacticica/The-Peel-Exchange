@@ -3,6 +3,8 @@ import './app.css';
 // Ticker logic: poll `/api/ticker/` and render a continuously scrolling track.
 const TICKER_POLL_INTERVAL = 5000; // ms
 const TICKER_FETCH_URL = '/api/ticker/';
+const NEWS_POLL_INTERVAL = 30000; // ms
+const NEWS_FETCH_URL = '/api/latest-event/';
 
 function arrowForDirection(direction) {
     if (direction > 0) return '▲';
@@ -123,7 +125,85 @@ async function fetchAndUpdate() {
     }
 }
 
+
+function renderNews(eventObj) {
+    const el = document.getElementById('news-bar-text');
+    if (!el) return false;
+
+    if (!eventObj || !eventObj.event) {
+        el.textContent = 'No notable news';
+        return true;
+    }
+
+    const ev = eventObj.event;
+    // parse created_at and determine age
+    let createdAt = null;
+    try {
+        createdAt = Date.parse(ev.created_at);
+    } catch (e) {
+        createdAt = null;
+    }
+
+    const now = Date.now();
+    const FIVE_MIN = 5 * 60 * 1000;
+
+    if (!createdAt || (now - createdAt) > FIVE_MIN) {
+        el.textContent = 'No notable news';
+        return true;
+    }
+
+    // prefer server-rendered text (placeholder replaced). fall back to name+text
+    const rendered = ev.rendered_text || null;
+    if (rendered) {
+        el.textContent = rendered;
+    } else {
+        const text = ev.text || '';
+        const name = ev.name || '';
+        el.textContent = `${name}: ${text}`;
+    }
+
+    return true;
+}
+
+async function fetchNewsAndUpdate() {
+    try {
+        const res = await fetch(NEWS_FETCH_URL, { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        // Try to render; if the news element isn't present yet, observe the DOM and
+        // render once it appears (helps when this script runs before template insertion).
+        const didRender = renderNews(data);
+        if (!didRender) {
+            // wait for the element to be added to the DOM, then render once
+            const observer = new MutationObserver((mutations, obs) => {
+                const el = document.getElementById('news-bar-text');
+                if (el) {
+                    renderNews(data);
+                    obs.disconnect();
+                }
+            });
+            observer.observe(document.documentElement || document.body, { childList: true, subtree: true });
+            // safety: stop observing after 10s
+            setTimeout(() => observer.disconnect(), 10000);
+        }
+    } catch (e) {
+        // transient network error: try again shortly to avoid long gaps
+        setTimeout(fetchNewsAndUpdate, 5000);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     fetchAndUpdate();
     setInterval(fetchAndUpdate, TICKER_POLL_INTERVAL);
+
+    // News bar: fetch initially and poll periodically
+    fetchNewsAndUpdate();
+    setInterval(fetchNewsAndUpdate, NEWS_POLL_INTERVAL);
+
+    // When the page becomes visible again (or regains focus), fetch immediately
+    // so the news line updates promptly after tab switches / background throttling.
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') fetchNewsAndUpdate();
+    });
+    window.addEventListener('focus', () => fetchNewsAndUpdate());
 });

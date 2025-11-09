@@ -27,6 +27,7 @@ urlpatterns = [
     path('api/stocks/', market_views.stocks_list, name='stocks-list'),
     path('api/stocks/<str:symbol>/', market_views.stock_detail, name='stock-detail'),
     path('api/stocks/<str:symbol>/history/', market_views.stock_history, name='stock-history'),
+    path('api/latest-event/', market_views.latest_event, name='latest-event'),
     path('api/buy/', market_views.buy_stock, name='buy-stock'),
     path('api/sell/', market_views.sell_stock, name='sell-stock'),
     path('', include('market.urls')),

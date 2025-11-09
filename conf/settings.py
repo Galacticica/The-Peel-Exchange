@@ -79,8 +79,8 @@ DATABASES = {
 }
 
 CRONJOBS = [
-    # run every minute
-    ('* * * * *', 'django.core.management.call_command', ['update_stocks'])
+    ('* * * * *', 'django.core.management.call_command', ['update_stocks']),
+    ('*/5 * * * *', 'django.core.management.call_command', ['random_market_event']),
 ]
 
 # Password validation
