@@ -165,6 +165,20 @@
 
                         <div class="card bg-base-200">
                             <div class="card-body p-4">
+                                <h4 class="card-title text-sm">Market-Wide Events</h4>
+                                <div class="space-y-2">
+                                    <button onclick="triggerMarketEvent('boom')" class="btn btn-sm btn-success w-full">
+                                        🌟 Golden Peel Boom (+25-50%)
+                                    </button>
+                                    <button onclick="triggerMarketEvent('crisis')" class="btn btn-sm btn-error w-full">
+                                        💥 Bruised Peel Crisis (-25-50%)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card bg-base-200">
+                            <div class="card-body p-4">
                                 <h4 class="card-title text-sm">Current Status</h4>
                                 <div class="text-xs space-y-1">
                                     <p><strong>User:</strong> {{ user.get_full_name }}</p>
@@ -235,7 +249,6 @@
                     const response = await fetch('/api/stocks/');
                     const data = await response.json();
                     
-                    // Populate event stock selector
                     const select = document.getElementById('admin-stock-select');
                     select.innerHTML = '';
                     
@@ -246,7 +259,6 @@
                         select.appendChild(option);
                     });
                     
-                    // Populate price setter stock selector
                     const priceSelect = document.getElementById('admin-price-stock-select');
                     priceSelect.innerHTML = '';
                     
@@ -258,7 +270,6 @@
                         priceSelect.appendChild(option);
                     });
                     
-                    // Set initial price in input when selection changes
                     priceSelect.addEventListener('change', function() {
                         const selectedOption = priceSelect.options[priceSelect.selectedIndex];
                         if (selectedOption && selectedOption.dataset.currentPrice) {
@@ -266,7 +277,6 @@
                         }
                     });
                     
-                    // Set initial value
                     if (priceSelect.options.length > 0) {
                         document.getElementById('admin-stock-price').value = priceSelect.options[0].dataset.currentPrice || '10.00';
                     }
@@ -396,6 +406,45 @@
                         }, 1500);
                     } else {
                         showAdminFeedback(data.error || 'Failed to set price', true);
+                    }
+                } catch (error) {
+                    showAdminFeedback('Error: ' + error.message, true);
+                }
+            }
+
+            async function triggerMarketEvent(eventType) {
+                const eventNames = {
+                    'boom': 'Golden Peel Boom',
+                    'crisis': 'Bruised Peel Crisis'
+                };
+                
+                const confirmMessage = eventType === 'boom' 
+                    ? 'Trigger Golden Peel Boom? All stocks will increase by 25-50%!'
+                    : 'Trigger Bruised Peel Crisis? All stocks will decrease by 25-50%!';
+                
+                if (!confirm(confirmMessage)) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/admin/market-event/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify({ 
+                            event_type: eventType
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        showAdminFeedback(`${eventNames[eventType]} activated! ${data.stocks_affected} stocks affected.`);
+                        setTimeout(() => window.location.reload(), 2000);
+                    } else {
+                        showAdminFeedback(data.error || 'Failed to trigger event', true);
                     }
                 } catch (error) {
                     showAdminFeedback('Error: ' + error.message, true);

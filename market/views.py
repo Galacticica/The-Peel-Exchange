@@ -11,7 +11,7 @@ from django.http import JsonResponse, Http404
 from django.views.decorators.http import require_GET, require_POST
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
-from market.models import Stock, Holding, MarketEvent, MarketEventApplication
+from market.models import Stock, Holding, MarketEvent, MarketEventApplication, StockPriceHistory
 from django.utils.html import escape
 from django.db import transaction
 from django.db.models import Sum, F, FloatField, Value
@@ -594,3 +594,54 @@ def check_loan_status(request):
 		return JsonResponse({'error': str(e)}, status=500)
 
 
+@staff_member_required
+@require_POST
+def admin_market_event(request):
+	"""Admin endpoint to trigger market-wide events.
+	
+	Expects JSON body: {"event_type": "boom" | "crisis"}
+	boom: increases all stocks by 25-50%
+	crisis: decreases all stocks by 25-50%
+	"""
+	try:
+		payload = json.loads(request.body.decode('utf-8'))
+		event_type = payload.get('event_type')
+		
+		if event_type not in ['boom', 'crisis']:
+			return JsonResponse({'error': 'Invalid event type. Use "boom" or "crisis"'}, status=400)
+		
+		stocks = Stock.objects.all()
+		if not stocks.exists():
+			return JsonResponse({'error': 'No stocks available'}, status=404)
+		
+		stocks_affected = 0
+		
+		for stock in stocks:
+			impact = random.uniform(0.25, 0.50)
+			
+			if event_type == 'boom':
+				stock.price = max(0.1, stock.price * (1 + impact))
+			else:  
+				stock.price = max(0.1, stock.price * (1 - impact))
+			
+			stock.save()
+			
+			StockPriceHistory.objects.create(stock=stock, price=stock.price)
+			stocks_affected += 1
+		
+		event_names = {
+			'boom': 'Golden Peel Boom',
+			'crisis': 'Bruised Peel Crisis'
+		}
+		
+		return JsonResponse({
+			'success': True,
+			'event_type': event_type,
+			'event_name': event_names[event_type],
+			'stocks_affected': stocks_affected
+		})
+		
+	except json.JSONDecodeError:
+		return JsonResponse({'error': 'Invalid JSON'}, status=400)
+	except Exception as e:
+		return JsonResponse({'error': str(e)}, status=500)

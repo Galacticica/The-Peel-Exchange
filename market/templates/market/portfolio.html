@@ -115,7 +115,6 @@
 		<p>You don't own any stocks yet.</p>
 	{% endif %}
 
-<!-- Loan Popup Modal -->
 <dialog id="loan-modal" class="modal">
 	<div class="modal-box">
 		<h3 class="font-bold text-lg">🍌 Banana Bank Emergency Loan</h3>
@@ -133,7 +132,6 @@
 	</form>
 </dialog>
 
-<!-- Loan Repayment Notification -->
 <div id="loan-repaid-toast" class="toast toast-top toast-center hidden">
 	<div class="alert alert-success">
 		<span id="loan-repaid-message">Loan repaid successfully!</span>
@@ -171,7 +169,6 @@
 			if (!res.ok) return;
 			const data = await res.json();
 			
-			// Show repayment notification if loan was auto-repaid
 			if (data.auto_repaid) {
 				const toast = document.getElementById('loan-repaid-toast');
 				const message = document.getElementById('loan-repaid-message');
@@ -179,7 +176,6 @@
 				toast.classList.remove('hidden');
 				setTimeout(() => toast.classList.add('hidden'), 5000);
 				
-				// Update balance display
 				const balanceEl = document.getElementById('cash-balance');
 				if (balanceEl) {
 					balanceEl.dataset.balance = data.new_balance;
@@ -187,7 +183,6 @@
 				}
 			}
 			
-			// Show loan modal if eligible and not already shown
 			if (data.eligible_for_loan && !loanModalShown) {
 				loanModalShown = true;
 				document.getElementById('loan-modal').showModal();
@@ -210,17 +205,14 @@
 			const data = await res.json();
 			
 			if (res.ok) {
-				// Close modal
 				document.getElementById('loan-modal').close();
 				
-				// Update balance
 				const balanceEl = document.getElementById('cash-balance');
 				if (balanceEl) {
 					balanceEl.dataset.balance = data.new_balance;
 					balanceEl.textContent = data.new_balance.toFixed(2) + ' 🍌';
 				}
 				
-				// Show success message
 				const toast = document.getElementById('loan-repaid-toast');
 				const message = document.getElementById('loan-repaid-message');
 				message.textContent = `Loan of $${data.loan_given} approved! Remember to repay $${data.to_repay} when your balance exceeds $50.`;
@@ -247,7 +239,6 @@
 		let stocksTotal = 0;
 		const processedSymbols = new Set();
 
-		// Only select table rows and mobile cards, not all elements with data-symbol
 		const holdings = document.querySelectorAll('tr[data-symbol], .card[data-symbol]');
 		
 		holdings.forEach(elem => {
