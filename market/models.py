@@ -25,8 +25,8 @@ class Stock(models.Model):
         StockPriceHistory.objects.create(stock=self, price=self.price)
 
         history = self.history.order_by('-timestamp')
-        if history.count() > 500:
-            for old in history[500:]:
+        if history.count() > 2000:
+            for old in history[2000:]:
                 old.delete()
 
     def __str__(self):

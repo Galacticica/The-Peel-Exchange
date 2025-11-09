@@ -115,11 +115,40 @@
 		<p>You don't own any stocks yet.</p>
 	{% endif %}
 
+<!-- Loan Popup Modal -->
+<dialog id="loan-modal" class="modal">
+	<div class="modal-box">
+		<h3 class="font-bold text-lg">🍌 Banana Bank Emergency Loan</h3>
+		<p class="py-4">Your portfolio is looking a bit light! The Banana Bank offers you a <strong>$20 emergency loan</strong>.</p>
+		<div class="alert alert-warning">
+			<span>📝 Repay with 25% interest ($25 total) automatically when your balance is above $50.</span>
+		</div>
+		<div class="modal-action">
+			<button class="btn" onclick="document.getElementById('loan-modal').close()">No Thanks</button>
+			<button class="btn btn-primary" onclick="takeLoan()">Accept Loan</button>
+		</div>
+	</div>
+	<form method="dialog" class="modal-backdrop">
+		<button>close</button>
+	</form>
+</dialog>
+
+<!-- Loan Repayment Notification -->
+<div id="loan-repaid-toast" class="toast toast-top toast-center hidden">
+	<div class="alert alert-success">
+		<span id="loan-repaid-message">Loan repaid successfully!</span>
+	</div>
+</div>
+
 <script>
 (function(){
 	const POLL_INTERVAL = 5000;
 	const TICKER_URL = '/api/ticker/';
 	const SELL_URL = '/api/sell/';
+	const LOAN_STATUS_URL = '/api/loan/status/';
+	const TAKE_LOAN_URL = '/api/loan/take/';
+
+	let loanModalShown = false;
 
 	function getCookie(name) {
 		let cookieValue = null;
@@ -136,6 +165,77 @@
 		return cookieValue;
 	}
 
+	async function checkLoanStatus() {
+		try {
+			const res = await fetch(LOAN_STATUS_URL, { cache: 'no-store' });
+			if (!res.ok) return;
+			const data = await res.json();
+			
+			// Show repayment notification if loan was auto-repaid
+			if (data.auto_repaid) {
+				const toast = document.getElementById('loan-repaid-toast');
+				const message = document.getElementById('loan-repaid-message');
+				message.textContent = `Loan of $${data.repaid_amount} automatically repaid! New balance: $${data.new_balance}`;
+				toast.classList.remove('hidden');
+				setTimeout(() => toast.classList.add('hidden'), 5000);
+				
+				// Update balance display
+				const balanceEl = document.getElementById('cash-balance');
+				if (balanceEl) {
+					balanceEl.dataset.balance = data.new_balance;
+					balanceEl.textContent = data.new_balance.toFixed(2) + ' 🍌';
+				}
+			}
+			
+			// Show loan modal if eligible and not already shown
+			if (data.eligible_for_loan && !loanModalShown) {
+				loanModalShown = true;
+				document.getElementById('loan-modal').showModal();
+			}
+		} catch(e) {
+			console.error('Error checking loan status:', e);
+		}
+	}
+
+	window.takeLoan = async function() {
+		try {
+			const res = await fetch(TAKE_LOAN_URL, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-CSRFToken': getCookie('csrftoken')
+				}
+			});
+			
+			const data = await res.json();
+			
+			if (res.ok) {
+				// Close modal
+				document.getElementById('loan-modal').close();
+				
+				// Update balance
+				const balanceEl = document.getElementById('cash-balance');
+				if (balanceEl) {
+					balanceEl.dataset.balance = data.new_balance;
+					balanceEl.textContent = data.new_balance.toFixed(2) + ' 🍌';
+				}
+				
+				// Show success message
+				const toast = document.getElementById('loan-repaid-toast');
+				const message = document.getElementById('loan-repaid-message');
+				message.textContent = `Loan of $${data.loan_given} approved! Remember to repay $${data.to_repay} when your balance exceeds $50.`;
+				toast.classList.remove('hidden');
+				setTimeout(() => toast.classList.add('hidden'), 6000);
+				
+				fetchAndUpdate();
+			} else {
+				alert(data.error || 'Failed to process loan');
+			}
+		} catch(e) {
+			alert('Error processing loan: ' + e.message);
+		}
+	};
+
 	async function fetchAndUpdate(){
 		try{
 			const res = await fetch(TICKER_URL, { cache: 'no-store' });
@@ -147,13 +247,18 @@
 		let stocksTotal = 0;
 		const processedSymbols = new Set();
 
-		document.querySelectorAll('[data-symbol]').forEach(elem => {
+		// Only select table rows and mobile cards, not all elements with data-symbol
+		const holdings = document.querySelectorAll('tr[data-symbol], .card[data-symbol]');
+		
+		holdings.forEach(elem => {
 			const sym = elem.dataset.symbol;
+			if (!sym || processedSymbols.has(sym)) return;
+			
 			const item = map[sym];
 			const sharesEl = elem.querySelector('.portfolio-shares[data-symbol="' + sym + '"]');
 			const shares = sharesEl ? parseInt(sharesEl.textContent, 10) : 0;
 
-			if(item){
+			if(item && shares > 0){
 				const priceEl = elem.querySelector('.portfolio-price[data-symbol="' + sym + '"]');
 				const dirEl = elem.querySelector('.portfolio-direction[data-symbol="' + sym + '"]');
 				const totalEl = elem.querySelector('.portfolio-total[data-symbol="' + sym + '"]');
@@ -170,13 +275,13 @@
 				const total = Math.round((price * shares + Number.EPSILON) * 100) / 100;
 				if(totalEl) totalEl.textContent = total.toFixed(2);
 				
-				if(!processedSymbols.has(sym)){
-					stocksTotal += total;
-					processedSymbols.add(sym);
-				}
+				stocksTotal += total;
+				processedSymbols.add(sym);
 			}
-		});			const stocksTotalEl = document.getElementById('stocks-total');
-			if(stocksTotalEl) stocksTotalEl.textContent = stocksTotal.toFixed(2);
+		});
+		
+		const stocksTotalEl = document.getElementById('stocks-total');
+		if(stocksTotalEl) stocksTotalEl.textContent = stocksTotal.toFixed(2);
 
 			const balanceEl = document.getElementById('cash-balance');
 			const balance = balanceEl ? parseFloat(balanceEl.dataset.balance || balanceEl.textContent || '0') : 0;
@@ -245,7 +350,9 @@
 
 	document.addEventListener('DOMContentLoaded', function(){
 		fetchAndUpdate();
+		checkLoanStatus();
 		setInterval(fetchAndUpdate, POLL_INTERVAL);
+		setInterval(checkLoanStatus, POLL_INTERVAL);
 
 		document.querySelectorAll('.sell-form').forEach(form => {
 			form.addEventListener('submit', function(evt){

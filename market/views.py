@@ -372,11 +372,12 @@ def leaderboard(request):
 def admin_force_event(request):
 	"""Admin endpoint to force a market event of a specific impact level.
 	
-	Expects JSON body: {"impact_level": "minor|moderate|major|severe"}
+	Expects JSON body: {"impact_level": "minor|moderate|major|severe", "stock_symbol": "CORN"}
 	"""
 	try:
 		payload = json.loads(request.body.decode('utf-8'))
 		impact_level = payload.get('impact_level', 'minor')
+		stock_symbol = payload.get('stock_symbol')
 		
 		valid_levels = ['minor', 'moderate', 'major', 'severe']
 		if impact_level not in valid_levels:
@@ -388,11 +389,16 @@ def admin_force_event(request):
 		
 		event = random.choice(events)
 		
-		stocks = Stock.objects.all()
-		if not stocks.exists():
-			return JsonResponse({'error': 'No stocks available'}, status=404)
-		
-		stock = random.choice(stocks)
+		if stock_symbol:
+			try:
+				stock = Stock.objects.get(symbol=stock_symbol)
+			except Stock.DoesNotExist:
+				return JsonResponse({'error': f'Stock {stock_symbol} not found'}, status=404)
+		else:
+			stocks = Stock.objects.all()
+			if not stocks.exists():
+				return JsonResponse({'error': 'No stocks available'}, status=404)
+			stock = random.choice(stocks)
 		
 		event.apply_event(stock=stock)
 		
@@ -474,5 +480,117 @@ def admin_list_users(request):
 		return JsonResponse({'error': str(e)}, status=500)
 
 
+@staff_member_required
+@require_POST
+def admin_set_stock_price(request):
+	"""Admin endpoint to set a stock's price directly.
+	
+	Expects JSON body: {"stock_symbol": "CORN", "price": 15.50}
+	"""
+	try:
+		payload = json.loads(request.body.decode('utf-8'))
+		stock_symbol = payload.get('stock_symbol')
+		price = float(payload.get('price', 0))
+		
+		if not stock_symbol:
+			return JsonResponse({'error': 'Stock symbol is required'}, status=400)
+		
+		if price <= 0:
+			return JsonResponse({'error': 'Price must be positive'}, status=400)
+		
+		try:
+			stock = Stock.objects.get(symbol=stock_symbol)
+		except Stock.DoesNotExist:
+			return JsonResponse({'error': f'Stock {stock_symbol} not found'}, status=404)
+		
+		stock.price = price
+		stock.save()
+		
+		from market.models import StockPriceHistory
+		StockPriceHistory.objects.create(stock=stock, price=price)
+		
+		return JsonResponse({
+			'success': True,
+			'stock': stock.symbol,
+			'new_price': round(stock.price, 2)
+		})
+		
+	except (json.JSONDecodeError, ValueError):
+		return JsonResponse({'error': 'Invalid data'}, status=400)
+	except Exception as e:
+		return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@require_POST
+def take_loan(request):
+	"""Allow users to take a $20 emergency loan if portfolio is below $3."""
+	try:
+		user = request.user
+		
+		if user.has_loan:
+			return JsonResponse({'error': 'You already have an active loan'}, status=400)
+		
+		holdings = Holding.objects.filter(user=user).select_related('stock')
+		stocks_total = sum(float(h.stock.price) * int(h.shares) for h in holdings)
+		portfolio_worth = float(user.balance or 0.0) + stocks_total
+		
+		if portfolio_worth >= 3.0:
+			return JsonResponse({'error': 'You must have less than $3 total to qualify for a loan'}, status=400)
+		
+		LOAN_AMOUNT = 20.0
+		user.has_loan = True
+		user.loan_amount = LOAN_AMOUNT * 1.25  
+		user.balance = float(user.balance or 0.0) + LOAN_AMOUNT
+		user.save()
+		
+		return JsonResponse({
+			'success': True,
+			'loan_given': LOAN_AMOUNT,
+			'to_repay': user.loan_amount,
+			'new_balance': round(user.balance, 2)
+		})
+		
+	except Exception as e:
+		return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@require_GET
+def check_loan_status(request):
+	"""Check if user has a loan and if they can repay it."""
+	try:
+		user = request.user
+		
+		holdings = Holding.objects.filter(user=user).select_related('stock')
+		stocks_total = sum(float(h.stock.price) * int(h.shares) for h in holdings)
+		portfolio_worth = float(user.balance or 0.0) + stocks_total
+		
+		if user.has_loan and user.balance >= 50.0:
+			user.balance = float(user.balance) - user.loan_amount
+			user.has_loan = False
+			repaid_amount = user.loan_amount
+			user.loan_amount = 0.0
+			user.save()
+			
+			return JsonResponse({
+				'has_loan': False,
+				'auto_repaid': True,
+				'repaid_amount': round(repaid_amount, 2),
+				'new_balance': round(user.balance, 2),
+				'portfolio_worth': round(portfolio_worth, 2),
+				'eligible_for_loan': portfolio_worth < 3.0
+			})
+		
+		return JsonResponse({
+			'has_loan': user.has_loan,
+			'loan_amount': round(user.loan_amount, 2) if user.has_loan else 0,
+			'balance': round(user.balance, 2),
+			'portfolio_worth': round(portfolio_worth, 2),
+			'eligible_for_loan': portfolio_worth < 3.0 and not user.has_loan
+		})
+		
+	except Exception as e:
+		return JsonResponse({'error': str(e)}, status=500)
 
 

@@ -41,6 +41,8 @@ class User(AbstractUser):
     username = None  
     email = models.EmailField(unique=True)
     balance = models.FloatField(default=100.0)
+    has_loan = models.BooleanField(default=False)
+    loan_amount = models.FloatField(default=0.0)
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 

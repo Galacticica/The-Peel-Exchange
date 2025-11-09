@@ -92,6 +92,14 @@
                         <div class="card bg-base-200">
                             <div class="card-body p-4">
                                 <h4 class="card-title text-sm">Force Market Event</h4>
+                                <div class="form-control mb-2">
+                                    <label class="label">
+                                        <span class="label-text">Select Stock</span>
+                                    </label>
+                                    <select id="admin-stock-select" class="select select-bordered select-sm w-full">
+                                        <option value="">Loading stocks...</option>
+                                    </select>
+                                </div>
                                 <div class="space-y-2">
                                     <button onclick="forceEvent('minor')" class="btn btn-sm btn-info w-full">
                                         Slight Impact Event
@@ -128,6 +136,29 @@
                                 </div>
                                 <button onclick="addMoney()" class="btn btn-sm btn-success w-full mt-2">
                                     💰 Add Money to Account
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="card bg-base-200">
+                            <div class="card-body p-4">
+                                <h4 class="card-title text-sm">Set Stock Price</h4>
+                                <div class="form-control">
+                                    <label class="label">
+                                        <span class="label-text">Select Stock</span>
+                                    </label>
+                                    <select id="admin-price-stock-select" class="select select-bordered select-sm w-full">
+                                        <option value="">Loading stocks...</option>
+                                    </select>
+                                </div>
+                                <div class="form-control mt-2">
+                                    <label class="label">
+                                        <span class="label-text">New Price ($)</span>
+                                    </label>
+                                    <input type="number" id="admin-stock-price" placeholder="10.00" class="input input-bordered input-sm" step="0.01" min="0.01" value="10.00">
+                                </div>
+                                <button onclick="setStockPrice()" class="btn btn-sm btn-primary w-full mt-2">
+                                    💲 Set Price
                                 </button>
                             </div>
                         </div>
@@ -199,13 +230,66 @@
                 }
             }
 
+            async function loadStocks() {
+                try {
+                    const response = await fetch('/api/stocks/');
+                    const data = await response.json();
+                    
+                    // Populate event stock selector
+                    const select = document.getElementById('admin-stock-select');
+                    select.innerHTML = '';
+                    
+                    data.forEach(stock => {
+                        const option = document.createElement('option');
+                        option.value = stock.symbol;
+                        option.textContent = `${stock.symbol} - ${stock.name} ($${stock.price})`;
+                        select.appendChild(option);
+                    });
+                    
+                    // Populate price setter stock selector
+                    const priceSelect = document.getElementById('admin-price-stock-select');
+                    priceSelect.innerHTML = '';
+                    
+                    data.forEach(stock => {
+                        const option = document.createElement('option');
+                        option.value = stock.symbol;
+                        option.textContent = `${stock.symbol} - ${stock.name} ($${stock.price})`;
+                        option.dataset.currentPrice = stock.price;
+                        priceSelect.appendChild(option);
+                    });
+                    
+                    // Set initial price in input when selection changes
+                    priceSelect.addEventListener('change', function() {
+                        const selectedOption = priceSelect.options[priceSelect.selectedIndex];
+                        if (selectedOption && selectedOption.dataset.currentPrice) {
+                            document.getElementById('admin-stock-price').value = selectedOption.dataset.currentPrice;
+                        }
+                    });
+                    
+                    // Set initial value
+                    if (priceSelect.options.length > 0) {
+                        document.getElementById('admin-stock-price').value = priceSelect.options[0].dataset.currentPrice || '10.00';
+                    }
+                } catch (error) {
+                    console.error('Error loading stocks:', error);
+                }
+            }
+
             document.getElementById('admin-drawer')?.addEventListener('change', function(e) {
                 if (e.target.checked) {
                     loadUsers();
+                    loadStocks();
                 }
             });
 
             async function forceEvent(impactLevel) {
+                const stockSymbol = document.getElementById('admin-stock-select').value;
+                
+                if (!stockSymbol) {
+                    showAdminFeedback('Please select a stock', true);
+                    return;
+                }
+                
                 try {
                     const response = await fetch('/api/admin/force-event/', {
                         method: 'POST',
@@ -213,7 +297,10 @@
                             'Content-Type': 'application/json',
                             'X-CSRFToken': getCookie('csrftoken')
                         },
-                        body: JSON.stringify({ impact_level: impactLevel })
+                        body: JSON.stringify({ 
+                            impact_level: impactLevel,
+                            stock_symbol: stockSymbol
+                        })
                     });
 
                     const data = await response.json();
@@ -266,6 +353,49 @@
                         }, 1500);
                     } else {
                         showAdminFeedback(data.error || 'Failed to add money', true);
+                    }
+                } catch (error) {
+                    showAdminFeedback('Error: ' + error.message, true);
+                }
+            }
+
+            async function setStockPrice() {
+                const stockSymbol = document.getElementById('admin-price-stock-select').value;
+                const price = parseFloat(document.getElementById('admin-stock-price').value);
+                
+                if (!stockSymbol) {
+                    showAdminFeedback('Please select a stock', true);
+                    return;
+                }
+                
+                if (!price || price <= 0) {
+                    showAdminFeedback('Please enter a valid price', true);
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/admin/set-price/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify({ 
+                            stock_symbol: stockSymbol,
+                            price: price 
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        showAdminFeedback(`${data.stock} price set to $${data.new_price}`);
+                        setTimeout(() => {
+                            loadStocks();
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        showAdminFeedback(data.error || 'Failed to set price', true);
                     }
                 } catch (error) {
                     showAdminFeedback('Error: ' + error.message, true);
