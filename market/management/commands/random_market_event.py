@@ -22,7 +22,7 @@ class Command(BaseCommand):
             event = random.choice(events.filter(impact_level='severe'))
         elif event_type <= 25:
             event = random.choice(events.filter(impact_level='major'))
-        elif event_type <= 60:
+        elif event_type <= 55:
             event = random.choice(events.filter(impact_level='moderate'))
         else:
             event = random.choice(events.filter(impact_level='minor'))
