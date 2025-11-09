@@ -5,6 +5,9 @@ from django.contrib.auth.decorators import login_required
 from market.models import Stock, Holding, MarketEvent, MarketEventApplication
 from django.utils.html import escape
 from django.db import transaction
+from django.db.models import Sum, F, FloatField, Value
+from django.db.models.functions import Coalesce
+from accounts.models import User
 import json
 
 
@@ -328,5 +331,45 @@ def latest_event(request):
 	}
 
 	return JsonResponse({'event': data})
+
+
+@login_required
+def leaderboard(request):
+	"""Display the top 25 users by total portfolio worth."""
+	# Calculate portfolio worth for all users
+	users_data = []
+	
+	for user in User.objects.all():
+		# Get user's cash balance
+		balance = float(user.balance or 0.0)
+		
+		# Calculate total value of stocks
+		holdings = Holding.objects.filter(user=user).select_related('stock')
+		stocks_total = sum(float(h.stock.price) * int(h.shares) for h in holdings)
+		
+		# Total portfolio worth = cash + stocks
+		portfolio_worth = balance + stocks_total
+		
+		users_data.append({
+			'user': user,
+			'balance': balance,
+			'stocks_total': stocks_total,
+			'portfolio_worth': portfolio_worth,
+		})
+	
+	# Sort by portfolio worth (descending) and take top 25
+	users_data.sort(key=lambda x: x['portfolio_worth'], reverse=True)
+	top_users = users_data[:25]
+	
+	# Add rank to each user
+	for i, user_data in enumerate(top_users, 1):
+		user_data['rank'] = i
+	
+	context = {
+		'top_users': top_users,
+	}
+	
+	return render(request, 'market/leaderboard.html', context)
+
 
 

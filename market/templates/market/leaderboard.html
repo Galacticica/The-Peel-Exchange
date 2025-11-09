@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+	<h1 class="text-3xl font-bold mb-2 text-center">🏆 Leaderboard</h1>
+	<p class="text-center text-muted mb-6">Top 25 Traders by Total Portfolio Worth</p>
+
+	{% if top_users %}
+		<!-- Desktop table view (hidden on mobile) -->
+		<div class="hidden md:block overflow-x-auto">
+			<table class="table w-full">
+				<thead>
+					<tr>
+						<th class="text-center">Rank</th>
+						<th class="text-left">Trader</th>
+						<th class="text-right">Cash Balance</th>
+						<th class="text-right">Stocks Value</th>
+						<th class="text-right">Total Portfolio Worth</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for user_data in top_users %}
+					<tr class="{% if user_data.rank <= 3 %}bg-warning/10{% endif %}">
+						<td class="text-center">
+							{% if user_data.rank == 1 %}
+								<span class="text-3xl">🥇</span>
+							{% elif user_data.rank == 2 %}
+								<span class="text-3xl">🥈</span>
+							{% elif user_data.rank == 3 %}
+								<span class="text-3xl">🥉</span>
+							{% else %}
+								<span class="font-semibold text-lg">#{{ user_data.rank }}</span>
+							{% endif %}
+						</td>
+						<td>
+							<div class="font-semibold">{{ user_data.user.first_name }} {{ user_data.user.last_name }}</div>
+						</td>
+						<td class="text-right font-mono">{{ user_data.balance|floatformat:2 }} 🍌</td>
+						<td class="text-right font-mono">{{ user_data.stocks_total|floatformat:2 }} 🍌</td>
+						<td class="text-right">
+							<span class="text-xl font-bold {% if user_data.rank == 1 %}text-primary{% endif %}">
+								{{ user_data.portfolio_worth|floatformat:2 }} 🍌
+							</span>
+						</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+
+		<!-- Mobile card view (hidden on desktop) -->
+		<div class="md:hidden space-y-4">
+			{% for user_data in top_users %}
+			<div class="card bg-base-100 shadow-md p-4 {% if user_data.rank <= 3 %}border-2 border-warning{% endif %}">
+				<div class="flex justify-between items-start mb-3">
+					<div class="flex items-center gap-3">
+						<div class="text-center min-w-[60px]">
+							{% if user_data.rank == 1 %}
+								<span class="text-4xl">🥇</span>
+							{% elif user_data.rank == 2 %}
+								<span class="text-4xl">🥈</span>
+							{% elif user_data.rank == 3 %}
+								<span class="text-4xl">🥉</span>
+							{% else %}
+								<div class="text-2xl font-bold text-muted">#{{ user_data.rank }}</div>
+							{% endif %}
+						</div>
+						<div>
+							<div class="font-semibold text-lg">{{ user_data.user.first_name }} {{ user_data.user.last_name }}</div>
+							<div class="text-sm text-muted">{{ user_data.user.email }}</div>
+						</div>
+					</div>
+				</div>
+				
+				<div class="grid grid-cols-2 gap-3">
+					<div>
+						<div class="text-xs text-muted">Cash Balance</div>
+						<div class="font-mono text-base">{{ user_data.balance|floatformat:2 }} 🍌</div>
+					</div>
+					<div>
+						<div class="text-xs text-muted">Stocks Value</div>
+						<div class="font-mono text-base">{{ user_data.stocks_total|floatformat:2 }} 🍌</div>
+					</div>
+					<div class="col-span-2 mt-2 pt-3 border-t">
+						<div class="text-xs text-muted mb-1">Total Portfolio Worth</div>
+						<div class="font-mono text-2xl font-bold {% if user_data.rank == 1 %}text-primary{% endif %}">
+							{{ user_data.portfolio_worth|floatformat:2 }} 🍌
+						</div>
+					</div>
+				</div>
+			</div>
+			{% endfor %}
+		</div>
+	{% else %}
+		<div class="text-center py-12">
+			<p class="text-xl text-muted">No traders yet. Be the first!</p>
+		</div>
+	{% endif %}
+</div>
+
+<script>
+(function(){
+	const REFRESH_INTERVAL = 30000;
+	
+	function refreshPage() {
+		window.location.reload();
+	}
+	
+	setInterval(refreshPage, REFRESH_INTERVAL);
+})();
+</script>
+{% endblock %}

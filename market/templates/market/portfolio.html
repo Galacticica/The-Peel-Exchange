@@ -1,58 +1,117 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mx-auto py-6">
-	<h1 class="text-2xl font-semibold mb-2">Portfolio — {{ user_obj.first_name }} {{ user_obj.last_name }}</h1>
+<div class="container mx-auto px-4 py-6">
+	<h1 class="text-2xl font-semibold mb-4">Portfolio — {{ user_obj.first_name }} {{ user_obj.last_name }}</h1>
 
-	<div class="mb-4">
-		<p><strong>Cash balance:</strong> $<span id="cash-balance" data-balance="{{ balance }}">{{ balance }}</span></p>
-		<p><strong>Stocks total:</strong> $<span id="stocks-total">{{ stocks_total }}</span></p>
-		<p><strong>Total portfolio worth:</strong> $<span id="portfolio-worth">{{ portfolio_worth }}</span></p>
+	<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+		<div class="card bg-base-200 shadow-sm p-4">
+			<div class="text-sm text-muted mb-1">Peel Balance</div>
+			<div class="text-2xl font-bold"><span id="cash-balance" data-balance="{{ balance }}">{{ balance }} 🍌</span></div>
+		</div>
+		<div class="card bg-base-200 shadow-sm p-4">
+			<div class="text-sm text-muted mb-1">Stocks Total</div>
+			<div class="text-2xl font-bold"><span id="stocks-total">{{ stocks_total }}</span> 🍌</div>
+		</div>
+		<div class="card bg-primary text-primary-content shadow-sm p-4">
+			<div class="text-sm opacity-80 mb-1">Total Worth</div>
+			<div class="text-2xl font-bold"><span id="portfolio-worth">{{ portfolio_worth }}</span> 🍌</div>
+		</div>
 	</div>
 
-	<h2 class="text-xl font-medium mb-2">Holdings</h2>
+	<h2 class="text-xl font-medium mb-4">Holdings</h2>
 
 	{% if holdings %}
-		<table class="table-auto w-full border-collapse">
-			<thead>
-				<tr class="bg-gray-100">
-					<th class="px-4 py-2 text-left">Name</th>
-					<th class="px-4 py-2 text-left">Symbol</th>
-					<th class="px-4 py-2 text-left">Trend</th>
-					<th class="px-4 py-2 text-right">Price</th>
-					<th class="px-4 py-2 text-right">Quantity</th>
-					<th class="px-4 py-2 text-right">Total</th>
-					<th class="px-4 py-2 text-right">Sell</th>
-				</tr>
-			</thead>
-			<tbody>
-				{% for h in holdings %}
-				<tr class="border-t" data-symbol="{{ h.symbol }}">
-					<td class="px-4 py-2">{{ h.name }}</td>
-					<td class="px-4 py-2">{{ h.symbol }}</td>
-					<td class="px-4 py-2"><span class="portfolio-direction" data-symbol="{{ h.symbol }}">
-						{% if h.direction == 1 %}
-							<span class="text-green-600" title="Up">&#9650;</span>
-						{% elif h.direction == -1 %}
-							<span class="text-red-600" title="Down">&#9660;</span>
-						{% else %}
-							<span class="text-gray-500" title="No change">—</span>
-						{% endif %}
-					</span></td>
-					<td class="px-4 py-2 text-right">$<span class="portfolio-price" data-symbol="{{ h.symbol }}">{{ h.price }}</span></td>
-					<td class="px-4 py-2 text-right"><span class="portfolio-shares" data-symbol="{{ h.symbol }}">{{ h.shares }}</span></td>
-					<td class="px-4 py-2 text-right">$<span class="portfolio-total" data-symbol="{{ h.symbol }}">{{ h.total }}</span></td>
-					<td class="px-4 py-2 text-right">
-						<form class="sell-form" data-symbol="{{ h.symbol }}">
-							<input type="number" min="1" value="1" class="input input-sm input-bordered sell-amount" style="width:5rem; display:inline-block;" data-symbol="{{ h.symbol }}" />
-							<button type="submit" class="btn btn-sm btn-secondary sell-btn" data-symbol="{{ h.symbol }}">Sell</button>
-							<span class="sell-msg text-sm ml-2 text-red-600" data-symbol="{{ h.symbol }}"></span>
-						</form>
-					</td>
-				</tr>
-				{% endfor %}
-			</tbody>
-		</table>
+		<div class="hidden md:block overflow-x-auto">
+			<table class="table w-full">
+				<thead>
+					<tr>
+						<th class="text-left">Name</th>
+						<th class="text-left">Symbol</th>
+						<th class="text-left">Trend</th>
+						<th class="text-right">Price</th>
+						<th class="text-right">Quantity</th>
+						<th class="text-right">Total</th>
+						<th class="text-right">Sell</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for h in holdings %}
+					<tr data-symbol="{{ h.symbol }}">
+						<td>{{ h.name }}</td>
+						<td>{{ h.symbol }}</td>
+						<td><span class="portfolio-direction" data-symbol="{{ h.symbol }}">
+							{% if h.direction == 1 %}
+								<span class="text-green-600" title="Up">&#9650;</span>
+							{% elif h.direction == -1 %}
+								<span class="text-red-600" title="Down">&#9660;</span>
+							{% else %}
+								<span class="text-gray-500" title="No change">—</span>
+							{% endif %}
+						</span></td>
+						<td class="text-right"><span class="portfolio-price" data-symbol="{{ h.symbol }}">{{ h.price }}</span> 🍌</td>
+						<td class="text-right"><span class="portfolio-shares" data-symbol="{{ h.symbol }}">{{ h.shares }}</span></td>
+						<td class="text-right font-semibold"><span class="portfolio-total" data-symbol="{{ h.symbol }}">{{ h.total }}</span> 🍌</td>
+						<td class="text-right">
+							<form class="sell-form flex items-center justify-end gap-2" data-symbol="{{ h.symbol }}">
+								<input type="number" min="1" value="1" class="input input-sm input-bordered w-20 sell-amount" data-symbol="{{ h.symbol }}" />
+								<button type="submit" class="btn btn-sm btn-secondary sell-btn" data-symbol="{{ h.symbol }}">Sell</button>
+								<span class="sell-msg text-sm text-red-600" data-symbol="{{ h.symbol }}"></span>
+							</form>
+						</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+
+		<!-- Mobile card view (hidden on desktop) -->
+		<div class="md:hidden space-y-4">
+			{% for h in holdings %}
+			<div class="card bg-base-100 shadow-md p-4" data-symbol="{{ h.symbol }}">
+				<div class="flex justify-between items-start mb-3">
+					<div>
+						<div class="font-semibold text-lg">{{ h.name }}</div>
+						<div class="text-sm text-muted">{{ h.symbol }}</div>
+					</div>
+					<div class="flex items-center gap-2">
+						<span class="portfolio-direction" data-symbol="{{ h.symbol }}">
+							{% if h.direction == 1 %}
+								<span class="text-green-600 text-xl" title="Up">&#9650;</span>
+							{% elif h.direction == -1 %}
+								<span class="text-red-600 text-xl" title="Down">&#9660;</span>
+							{% else %}
+								<span class="text-gray-500" title="No change">—</span>
+							{% endif %}
+						</span>
+					</div>
+				</div>
+				
+				<div class="grid grid-cols-2 gap-3 mb-3">
+					<div>
+						<div class="text-xs text-muted">Price</div>
+						<div class="font-mono text-lg"><span class="portfolio-price" data-symbol="{{ h.symbol }}">{{ h.price }}</span> 🍌</div>
+					</div>
+					<div>
+						<div class="text-xs text-muted">Quantity</div>
+						<div class="font-mono text-lg"><span class="portfolio-shares" data-symbol="{{ h.symbol }}">{{ h.shares }}</span></div>
+					</div>
+					<div class="col-span-2">
+						<div class="text-xs text-muted">Total Value</div>
+						<div class="font-mono text-xl font-bold"><span class="portfolio-total" data-symbol="{{ h.symbol }}">{{ h.total }}</span> 🍌</div>
+					</div>
+				</div>
+
+				<form class="sell-form" data-symbol="{{ h.symbol }}">
+					<div class="flex gap-2">
+						<input type="number" min="1" value="1" class="input input-bordered flex-1 sell-amount" data-symbol="{{ h.symbol }}" placeholder="Quantity" />
+						<button type="submit" class="btn btn-secondary sell-btn" data-symbol="{{ h.symbol }}">Sell</button>
+					</div>
+					<span class="sell-msg text-sm mt-2 block text-red-600" data-symbol="{{ h.symbol }}"></span>
+				</form>
+			</div>
+			{% endfor %}
+		</div>
 	{% else %}
 		<p>You don't own any stocks yet.</p>
 	{% endif %}
@@ -86,35 +145,40 @@
 			const map = Object.create(null);
 			data.forEach(it => { map[it.symbol] = it; });
 
-			let stocksTotal = 0;
+		let stocksTotal = 0;
+		const processedSymbols = new Set();
 
-			document.querySelectorAll('tr[data-symbol]').forEach(row => {
-				const sym = row.dataset.symbol;
-				const item = map[sym];
-				const sharesEl = row.querySelector('.portfolio-shares[data-symbol="' + sym + '"]');
-				const shares = sharesEl ? parseInt(sharesEl.textContent, 10) : 0;
+		// Update both desktop table rows and mobile cards
+		document.querySelectorAll('[data-symbol]').forEach(elem => {
+			const sym = elem.dataset.symbol;
+			const item = map[sym];
+			const sharesEl = elem.querySelector('.portfolio-shares[data-symbol="' + sym + '"]');
+			const shares = sharesEl ? parseInt(sharesEl.textContent, 10) : 0;
 
-				if(item){
-					const priceEl = row.querySelector('.portfolio-price[data-symbol="' + sym + '"]');
-					const dirEl = row.querySelector('.portfolio-direction[data-symbol="' + sym + '"]');
-					const totalEl = row.querySelector('.portfolio-total[data-symbol="' + sym + '"]');
+			if(item){
+				const priceEl = elem.querySelector('.portfolio-price[data-symbol="' + sym + '"]');
+				const dirEl = elem.querySelector('.portfolio-direction[data-symbol="' + sym + '"]');
+				const totalEl = elem.querySelector('.portfolio-total[data-symbol="' + sym + '"]');
 
-					const price = (typeof item.price === 'number') ? item.price : parseFloat(item.price);
-					if(priceEl) priceEl.textContent = price.toFixed(2);
+				const price = (typeof item.price === 'number') ? item.price : parseFloat(item.price);
+				if(priceEl) priceEl.textContent = price.toFixed(2);
 
-					if(dirEl){
-						if(item.direction > 0) dirEl.innerHTML = '<span class="text-green-600" title="Up">&#9650;</span>';
-						else if(item.direction < 0) dirEl.innerHTML = '<span class="text-red-600" title="Down">&#9660;</span>';
-						else dirEl.innerHTML = '<span class="text-gray-500" title="No change">—</span>';
-					}
-
-					const total = Math.round((price * shares + Number.EPSILON) * 100) / 100;
-					if(totalEl) totalEl.textContent = total.toFixed(2);
-					stocksTotal += total;
+				if(dirEl){
+					if(item.direction > 0) dirEl.innerHTML = '<span class="text-green-600 text-xl" title="Up">&#9650;</span>';
+					else if(item.direction < 0) dirEl.innerHTML = '<span class="text-red-600 text-xl" title="Down">&#9660;</span>';
+					else dirEl.innerHTML = '<span class="text-gray-500" title="No change">—</span>';
 				}
-			});
 
-			const stocksTotalEl = document.getElementById('stocks-total');
+				const total = Math.round((price * shares + Number.EPSILON) * 100) / 100;
+				if(totalEl) totalEl.textContent = total.toFixed(2);
+				
+				// Only add to stocksTotal once per symbol
+				if(!processedSymbols.has(sym)){
+					stocksTotal += total;
+					processedSymbols.add(sym);
+				}
+			}
+		});			const stocksTotalEl = document.getElementById('stocks-total');
 			if(stocksTotalEl) stocksTotalEl.textContent = stocksTotal.toFixed(2);
 
 			const balanceEl = document.getElementById('cash-balance');
@@ -156,32 +220,29 @@
 			const balanceEl = document.getElementById('cash-balance');
 			if(balanceEl){
 				balanceEl.dataset.balance = body.balance;
-				balanceEl.textContent = Number(body.balance).toFixed(2);
+				balanceEl.textContent = Number(body.balance).toFixed(2) + ' 🍌';
 			}
 
-			// update holding row
-			const row = document.querySelector('tr[data-symbol="' + symbol + '"]');
-			if(row){
-				const sharesEl = row.querySelector('.portfolio-shares[data-symbol="' + symbol + '"]');
-				const totalEl = row.querySelector('.portfolio-total[data-symbol="' + symbol + '"]');
-				if(body.holding && body.holding.shares !== undefined){
-					const shares = parseInt(body.holding.shares, 10) || 0;
-					if(shares <= 0){
-						// remove row
-						row.parentNode.removeChild(row);
-					} else {
-						if(sharesEl) sharesEl.textContent = shares;
-						// recalc total based on current displayed price
-						const priceEl = row.querySelector('.portfolio-price[data-symbol="' + symbol + '"]');
-						const price = priceEl ? parseFloat(priceEl.textContent || '0') : 0;
-						const total = Math.round((price * shares + Number.EPSILON) * 100) / 100;
-						if(totalEl) totalEl.textContent = total.toFixed(2);
-					}
+		// update holding row/card (both desktop and mobile)
+		const elements = document.querySelectorAll('[data-symbol="' + symbol + '"]');
+		elements.forEach(elem => {
+			const sharesEl = elem.querySelector('.portfolio-shares[data-symbol="' + symbol + '"]');
+			const totalEl = elem.querySelector('.portfolio-total[data-symbol="' + symbol + '"]');
+			if(body.holding && body.holding.shares !== undefined){
+				const shares = parseInt(body.holding.shares, 10) || 0;
+				if(shares <= 0){
+					// remove element (row or card)
+					elem.parentNode.removeChild(elem);
+				} else {
+					if(sharesEl) sharesEl.textContent = shares;
+					// recalc total based on current displayed price
+					const priceEl = elem.querySelector('.portfolio-price[data-symbol="' + symbol + '"]');
+					const price = priceEl ? parseFloat(priceEl.textContent || '0') : 0;
+					const total = Math.round((price * shares + Number.EPSILON) * 100) / 100;
+					if(totalEl) totalEl.textContent = total.toFixed(2);
 				}
-
 			}
-
-			// clear any message and refresh ticker-derived totals
+		});			// clear any message and refresh ticker-derived totals
 			if(msgEl) { msgEl.textContent = 'Sold'; setTimeout(()=> { if(msgEl) msgEl.textContent = ''; }, 2000); }
 			fetchAndUpdate();
 

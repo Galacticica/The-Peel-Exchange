@@ -29,7 +29,7 @@ function createItemElement(it) {
 
     const pr = document.createElement('span');
     pr.className = 'text-xs text-muted ticker-price';
-    pr.textContent = `$${price}`;
+    pr.textContent = `${price} 🍌`;
 
     const ar = document.createElement('span');
     ar.className = 'text-sm ticker-arrow';
@@ -78,10 +78,10 @@ function renderTicker(items) {
             const pr2 = el2.querySelector('.ticker-price');
             const ar2 = el2.querySelector('.ticker-arrow');
             if (sym1) sym1.textContent = it.symbol;
-            if (pr1) pr1.textContent = `$${(typeof it.price === 'number' ? it.price.toFixed(2) : parseFloat(it.price).toFixed(2))}`;
+            if (pr1) pr1.textContent = `${(typeof it.price === 'number' ? it.price.toFixed(2) : parseFloat(it.price).toFixed(2))} 🍌`;
             if (ar1) ar1.textContent = arrowForDirection(it.direction);
             if (sym2) sym2.textContent = it.symbol;
-            if (pr2) pr2.textContent = `$${(typeof it.price === 'number' ? it.price.toFixed(2) : parseFloat(it.price).toFixed(2))}`;
+            if (pr2) pr2.textContent = `${(typeof it.price === 'number' ? it.price.toFixed(2) : parseFloat(it.price).toFixed(2))} 🍌`;
             if (ar2) ar2.textContent = arrowForDirection(it.direction);
                 // update color class based on direction (use ticker-specific classes)
                 el1.classList.remove('ticker-up', 'ticker-down', 'ticker-neutral');
