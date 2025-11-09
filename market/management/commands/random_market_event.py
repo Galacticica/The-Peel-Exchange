@@ -18,11 +18,11 @@ class Command(BaseCommand):
         events = MarketEvent.objects.all()
         
         event_type = random.randint(1, 100)
-        if event_type <= 4:
+        if event_type <= 10:
             event = random.choice(events.filter(impact_level='severe'))
-        elif event_type <= 15:
+        elif event_type <= 25:
             event = random.choice(events.filter(impact_level='major'))
-        elif event_type <= 40:
+        elif event_type <= 60:
             event = random.choice(events.filter(impact_level='moderate'))
         else:
             event = random.choice(events.filter(impact_level='minor'))
