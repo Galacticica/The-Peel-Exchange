@@ -27,6 +27,11 @@ class Stock(models.Model):
     
     def random_fluctuate(self):
         """Randomly fluctuate the stock price and maintain price history."""
+        if self.volatility_min is None or self.volatility_max is None or self.volatility_min != -1 * self.volatility_max:
+            base_volatility = random.uniform(0.05, 0.15)
+            self.volatility_min = -1 * base_volatility
+            self.volatility_max = base_volatility
+        
         change = random.uniform(self.volatility_min, self.volatility_max)
         self.price = max(0.1, self.price * (1 + change))
         super().save()  
