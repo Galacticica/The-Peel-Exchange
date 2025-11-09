@@ -107,8 +107,8 @@ if DATABASE_URL:
     }
 
 CRONJOBS = [
-    ('* * * * *', 'django.core.management.call_command', ['update_stocks']),
-    ('*/5 * * * *', 'django.core.management.call_command', ['random_market_event']),
+    ('* * * * *', 'django.core.management.call_command', ['update_stocks'], {}, '>> /tmp/cron_update_stocks.log 2>&1'),
+    ('*/5 * * * *', 'django.core.management.call_command', ['random_market_event'], {}, '>> /tmp/cron_market_event.log 2>&1'),
 ]
 
 

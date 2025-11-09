@@ -14,9 +14,21 @@ primary_region = "ord"
   # Use a shell so && is interpreted correctly by the remote executor
   release_command = "bash -lc 'python manage.py migrate --noinput && python manage.py collectstatic --noinput'"
 
+# VM resources - using shared-cpu-1x with 512MB RAM (free tier compatible)
+[vm]
+  memory = '512mb'
+  cpu_kind = 'shared'
+  cpus = 1
+
+# Define processes - web and cron worker
+[processes]
+  web = "/usr/local/bin/docker-entrypoint.sh"
+  cron = "/usr/local/bin/run-cron.sh"
+
 # Tell Fly how to route incoming requests to the container.
 # Gunicorn will bind to the PORT env var at runtime; internal_port should match that (8000 is fine).
 [[services]]
+  processes = ["web"]  # Only web process handles HTTP
   internal_port = 8000
   protocol = "tcp"
 

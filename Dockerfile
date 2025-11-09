@@ -36,6 +36,12 @@ COPY . .
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
+COPY run-cron.sh /usr/local/bin/run-cron.sh
+RUN chmod +x /usr/local/bin/run-cron.sh
+
+COPY run-scheduled-job.sh /usr/local/bin/run-scheduled-job.sh
+RUN chmod +x /usr/local/bin/run-scheduled-job.sh
+
 # Build frontend assets (vite) at image build time so production image serves static files
 # Fail the build if the frontend build fails so we don't produce images missing the manifest.
 RUN npm run build 

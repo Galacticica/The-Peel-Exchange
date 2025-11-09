@@ -39,9 +39,10 @@ else
 
 	PORT=${PORT:-8000}
 	echo "Starting gunicorn on 0.0.0.0:${PORT}"
+	# Reduce workers from 3 to 2 to save memory on free tier
 	exec gunicorn conf.wsgi:application \
 		--bind 0.0.0.0:${PORT} \
-		--workers 3 \
+		--workers 2 \
 		--log-level info \
 		--access-logfile - \
 		--error-logfile -

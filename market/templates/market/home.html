@@ -172,7 +172,8 @@
 			const res = await fetch(historyUrl(symbol), {cache: 'no-store'});
 			if(!res.ok) throw new Error('Failed to load history');
 			const h = await res.json();
-			const labels = h.map(item => new Date(item.timestamp).toLocaleString());
+		try{
+			const labels = h.map(item => new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
 			const data = h.map(item => item.price);
 			const ctx = document.getElementById('price-chart').getContext('2d');
 			if(!priceChart){
