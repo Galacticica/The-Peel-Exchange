@@ -48,17 +48,24 @@ class MarketEvent(models.Model):
     """Model representing a market event that can impact stock prices."""
     name = models.CharField(max_length=100)
     text = models.CharField(max_length=200)
-    impact_level = models.CharField(max_length=50)
+    impact_level = models.CharField(
+        max_length=50,
+        choices=[
+            ("minor", "Slightly"),
+            ("moderate", "Moderately"),
+            ("major", "Significantly"),
+            ("severe", "Severely"),
+        ],
+        default="minor",
+    )
     impact_low = models.FloatField()
     impact_high = models.FloatField()
     created_at = models.DateTimeField(auto_now_add=True)
     
-    def apply_event(self):
-        affected_stocks = Stock.objects.all()
-        for stock in affected_stocks:
-            impact = random.uniform(self.impact_low, self.impact_high)
-            stock.price = max(0.1, stock.price * (1 + impact))
-            stock.save()
+    def apply_event(self, stock):
+        impact = random.uniform(self.impact_low, self.impact_high)
+        stock.price = max(0.1, stock.price * (1 + impact))
+        stock.save()
 
     def __str__(self):
         return f"{self.name} (Impact: {self.impact_low} - {self.impact_high})"
