@@ -34,7 +34,6 @@ class MySignupView(FormView):
         """Create a new user."""
         user = User.objects.create(
             email=form.cleaned_data["email"],
-            username=form.cleaned_data["email"],
             first_name=form.cleaned_data["first_name"],
             last_name=form.cleaned_data["last_name"],
             password=make_password(form.cleaned_data["password"]), 

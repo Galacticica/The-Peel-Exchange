@@ -43,8 +43,11 @@
                         </a>
                     </div>
 
-                    <div class="flex items-center">
+                    <div class="flex items-center gap-2">
                         <a href="{% url 'market-portfolio' %}" class="btn btn-primary">Portfolio</a>
+                        {% if user.is_authenticated %}
+                        <a href="{% url 'logout_page' %}" class="btn btn-ghost">Logout</a>
+                        {% endif %}
                     </div>
                 </div>
             </header>
@@ -89,6 +92,94 @@
                     </div>
 
                     <div class="space-y-4">
+                        <!-- 1. Add Money -->
+                        <div class="card bg-base-200">
+                            <div class="card-body p-4">
+                                <h4 class="card-title text-sm">Add Money</h4>
+                                <div class="form-control">
+                                    <label class="label">
+                                        <span class="label-text">Select User</span>
+                                    </label>
+                                    <select id="admin-user-select" class="select select-bordered select-sm w-full">
+                                        <option value="">Loading users...</option>
+                                    </select>
+                                </div>
+                                <div class="form-control mt-2">
+                                    <label class="label">
+                                        <span class="label-text">Amount ($)</span>
+                                    </label>
+                                    <input type="number" id="admin-money-amount" placeholder="1000" class="input input-bordered input-sm" step="100" min="0" value="1000">
+                                </div>
+                                <button onclick="addMoney()" class="btn btn-sm btn-success w-full mt-2">
+                                    💰 Add Money to Account
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 2. Monkey Business -->
+                        <div class="card bg-base-200">
+                            <div class="card-body p-4">
+                                <h4 class="card-title text-sm">🐵 Monkey Business</h4>
+                                <p class="text-xs mb-2">Diversify a user's portfolio with random stocks</p>
+                                <div class="form-control">
+                                    <label class="label">
+                                        <span class="label-text">Select User</span>
+                                    </label>
+                                    <select id="admin-monkey-user-select" class="select select-bordered select-sm w-full">
+                                        <option value="">Loading users...</option>
+                                    </select>
+                                </div>
+                                <div class="form-control mt-2">
+                                    <label class="label">
+                                        <span class="label-text">Number of Stocks</span>
+                                    </label>
+                                    <input type="number" id="admin-monkey-num-stocks" placeholder="5" class="input input-bordered input-sm" min="1" max="20" value="5">
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 mt-2">
+                                    <div class="form-control">
+                                        <label class="label">
+                                            <span class="label-text text-xs">Min Shares</span>
+                                        </label>
+                                        <input type="number" id="admin-monkey-shares-min" placeholder="1" class="input input-bordered input-sm" min="1" value="1">
+                                    </div>
+                                    <div class="form-control">
+                                        <label class="label">
+                                            <span class="label-text text-xs">Max Shares</span>
+                                        </label>
+                                        <input type="number" id="admin-monkey-shares-max" placeholder="10" class="input input-bordered input-sm" min="1" value="10">
+                                    </div>
+                                </div>
+                                <button onclick="monkeyBusiness()" class="btn btn-sm btn-warning w-full mt-2">
+                                    🐵 Start Monkey Business
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 3. Set Stock Price -->
+                        <div class="card bg-base-200">
+                            <div class="card-body p-4">
+                                <h4 class="card-title text-sm">Set Stock Price</h4>
+                                <div class="form-control">
+                                    <label class="label">
+                                        <span class="label-text">Select Stock</span>
+                                    </label>
+                                    <select id="admin-price-stock-select" class="select select-bordered select-sm w-full">
+                                        <option value="">Loading stocks...</option>
+                                    </select>
+                                </div>
+                                <div class="form-control mt-2">
+                                    <label class="label">
+                                        <span class="label-text">New Price ($)</span>
+                                    </label>
+                                    <input type="number" id="admin-stock-price" placeholder="10.00" class="input input-bordered input-sm" step="0.01" min="0.01" value="10.00">
+                                </div>
+                                <button onclick="setStockPrice()" class="btn btn-sm btn-primary w-full mt-2">
+                                    � Set Price
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 4. Force Market Event -->
                         <div class="card bg-base-200">
                             <div class="card-body p-4">
                                 <h4 class="card-title text-sm">Force Market Event</h4>
@@ -117,52 +208,7 @@
                             </div>
                         </div>
 
-                        <div class="card bg-base-200">
-                            <div class="card-body p-4">
-                                <h4 class="card-title text-sm">Add Money</h4>
-                                <div class="form-control">
-                                    <label class="label">
-                                        <span class="label-text">Select User</span>
-                                    </label>
-                                    <select id="admin-user-select" class="select select-bordered select-sm w-full">
-                                        <option value="">Loading users...</option>
-                                    </select>
-                                </div>
-                                <div class="form-control mt-2">
-                                    <label class="label">
-                                        <span class="label-text">Amount ($)</span>
-                                    </label>
-                                    <input type="number" id="admin-money-amount" placeholder="1000" class="input input-bordered input-sm" step="100" min="0" value="1000">
-                                </div>
-                                <button onclick="addMoney()" class="btn btn-sm btn-success w-full mt-2">
-                                    💰 Add Money to Account
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="card bg-base-200">
-                            <div class="card-body p-4">
-                                <h4 class="card-title text-sm">Set Stock Price</h4>
-                                <div class="form-control">
-                                    <label class="label">
-                                        <span class="label-text">Select Stock</span>
-                                    </label>
-                                    <select id="admin-price-stock-select" class="select select-bordered select-sm w-full">
-                                        <option value="">Loading stocks...</option>
-                                    </select>
-                                </div>
-                                <div class="form-control mt-2">
-                                    <label class="label">
-                                        <span class="label-text">New Price ($)</span>
-                                    </label>
-                                    <input type="number" id="admin-stock-price" placeholder="10.00" class="input input-bordered input-sm" step="0.01" min="0.01" value="10.00">
-                                </div>
-                                <button onclick="setStockPrice()" class="btn btn-sm btn-primary w-full mt-2">
-                                    💲 Set Price
-                                </button>
-                            </div>
-                        </div>
-
+                        <!-- 5. Market-Wide Events -->
                         <div class="card bg-base-200">
                             <div class="card-body p-4">
                                 <h4 class="card-title text-sm">Market-Wide Events</h4>
@@ -171,12 +217,13 @@
                                         🌟 Golden Peel Boom (+25-50%)
                                     </button>
                                     <button onclick="triggerMarketEvent('crisis')" class="btn btn-sm btn-error w-full">
-                                        💥 Bruised Peel Crisis (-25-50%)
+                                        � Bruised Peel Crisis (-25-50%)
                                     </button>
                                 </div>
                             </div>
                         </div>
 
+                        <!-- 6. Current Status -->
                         <div class="card bg-base-200">
                             <div class="card-body p-4">
                                 <h4 class="card-title text-sm">Current Status</h4>
@@ -233,11 +280,23 @@
                     const select = document.getElementById('admin-user-select');
                     select.innerHTML = '';
                     
+                    const monkeySelect = document.getElementById('admin-monkey-user-select');
+                    if (monkeySelect) {
+                        monkeySelect.innerHTML = '';
+                    }
+                    
                     data.users.forEach(user => {
                         const option = document.createElement('option');
                         option.value = user.id;
                         option.textContent = `${user.name} - $${user.balance}`;
                         select.appendChild(option);
+                        
+                        if (monkeySelect) {
+                            const monkeyOption = document.createElement('option');
+                            monkeyOption.value = user.id;
+                            monkeyOption.textContent = `${user.name} - $${user.balance}`;
+                            monkeySelect.appendChild(monkeyOption);
+                        }
                     });
                 } catch (error) {
                     console.error('Error loading users:', error);
@@ -445,6 +504,58 @@
                         setTimeout(() => window.location.reload(), 2000);
                     } else {
                         showAdminFeedback(data.error || 'Failed to trigger event', true);
+                    }
+                } catch (error) {
+                    showAdminFeedback('Error: ' + error.message, true);
+                }
+            }
+
+            async function monkeyBusiness() {
+                const userId = document.getElementById('admin-monkey-user-select').value;
+                const numStocks = parseInt(document.getElementById('admin-monkey-num-stocks').value);
+                const sharesMin = parseInt(document.getElementById('admin-monkey-shares-min').value);
+                const sharesMax = parseInt(document.getElementById('admin-monkey-shares-max').value);
+                
+                if (!userId) {
+                    showAdminFeedback('Please select a user', true);
+                    return;
+                }
+                
+                if (!numStocks || numStocks <= 0) {
+                    showAdminFeedback('Please enter a valid number of stocks', true);
+                    return;
+                }
+                
+                if (sharesMin <= 0 || sharesMax <= 0 || sharesMin > sharesMax) {
+                    showAdminFeedback('Invalid shares range', true);
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/admin/monkey-business/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify({ 
+                            user_id: userId,
+                            num_stocks: numStocks,
+                            shares_min: sharesMin,
+                            shares_max: sharesMax
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        showAdminFeedback(`🐵 ${data.message} Added ${data.total_shares_added} shares to ${data.user_name}. Portfolio worth: $${data.portfolio_worth}`);
+                        setTimeout(() => {
+                            loadUsers();
+                            window.location.reload();
+                        }, 2000);
+                    } else {
+                        showAdminFeedback(data.error || 'Failed to execute monkey business', true);
                     }
                 } catch (error) {
                     showAdminFeedback('Error: ' + error.message, true);

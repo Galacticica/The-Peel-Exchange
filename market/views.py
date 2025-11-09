@@ -645,3 +645,99 @@ def admin_market_event(request):
 		return JsonResponse({'error': 'Invalid JSON'}, status=400)
 	except Exception as e:
 		return JsonResponse({'error': str(e)}, status=500)
+
+
+@staff_member_required
+@require_POST
+def admin_monkey_business(request):
+	"""Admin endpoint to diversify a user's portfolio with random stocks.
+	
+	Expects JSON body: {
+		"user_id": 1,
+		"num_stocks": 5,
+		"shares_min": 1,  # optional, default 1
+		"shares_max": 10  # optional, default 10
+	}
+	"""
+	try:
+		payload = json.loads(request.body.decode('utf-8'))
+		user_id = payload.get('user_id')
+		num_stocks = int(payload.get('num_stocks', 0))
+		shares_min = int(payload.get('shares_min', 1))
+		shares_max = int(payload.get('shares_max', 10))
+		
+		if not user_id:
+			return JsonResponse({'error': 'User ID is required'}, status=400)
+		
+		if num_stocks <= 0:
+			return JsonResponse({'error': 'Number of stocks must be positive'}, status=400)
+		
+		if shares_min <= 0 or shares_max <= 0 or shares_min > shares_max:
+			return JsonResponse({'error': 'Invalid shares range'}, status=400)
+		
+		try:
+			target_user = User.objects.get(id=user_id)
+		except User.DoesNotExist:
+			return JsonResponse({'error': 'User not found'}, status=404)
+		
+		all_stocks = list(Stock.objects.all())
+		if not all_stocks:
+			return JsonResponse({'error': 'No stocks available'}, status=404)
+		
+		if num_stocks > len(all_stocks):
+			num_stocks = len(all_stocks)
+		
+		selected_stocks = random.sample(all_stocks, num_stocks)
+		
+		added_holdings = []
+		total_shares = 0
+		
+		for stock in selected_stocks:
+			shares = random.randint(shares_min, shares_max)
+			
+			holding, created = Holding.objects.get_or_create(
+				user=target_user,
+				stock=stock,
+				defaults={'shares': shares}
+			)
+			
+			if not created:
+				old_shares = holding.shares
+				holding.shares += shares
+				holding.save()
+				added_holdings.append({
+					'symbol': stock.symbol,
+					'name': stock.name,
+					'shares_added': shares,
+					'total_shares': holding.shares,
+					'was_new': False
+				})
+			else:
+				added_holdings.append({
+					'symbol': stock.symbol,
+					'name': stock.name,
+					'shares_added': shares,
+					'total_shares': shares,
+					'was_new': True
+				})
+			
+			total_shares += shares
+		
+		holdings = Holding.objects.filter(user=target_user).select_related('stock')
+		stocks_total = sum(float(h.stock.price) * int(h.shares) for h in holdings)
+		portfolio_worth = float(target_user.balance or 0.0) + stocks_total
+		
+		return JsonResponse({
+			'success': True,
+			'message': '🐵 Monkey Business complete!',
+			'user_name': target_user.get_full_name() or target_user.email,
+			'holdings_added': added_holdings,
+			'total_shares_added': total_shares,
+			'portfolio_worth': round(portfolio_worth, 2),
+			'stocks_value': round(stocks_total, 2)
+		})
+		
+	except (json.JSONDecodeError, ValueError):
+		return JsonResponse({'error': 'Invalid data'}, status=400)
+	except Exception as e:
+		return JsonResponse({'error': str(e)}, status=500)
