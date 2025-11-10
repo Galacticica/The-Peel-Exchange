@@ -26,14 +26,30 @@ class Stock(models.Model):
         super().save(*args, **kwargs)
     
     def random_fluctuate(self):
-        """Randomly fluctuate the stock price and maintain price history."""
+        """Randomly fluctuate the stock price and maintain price history.
+        
+        Uses an asymmetric mean-reverting model: strong recovery for crashed stocks,
+        minimal resistance for successful stocks.
+        """
         if self.volatility_min is None or self.volatility_max is None or self.volatility_min != -1 * self.volatility_max:
             base_volatility = random.uniform(0.05, 0.15)
             self.volatility_min = -1 * base_volatility
             self.volatility_max = base_volatility
         
-        change = random.uniform(self.volatility_min, self.volatility_max)
-        self.price = max(0.1, self.price * (1 + change))
+        random_change = random.uniform(self.volatility_min, self.volatility_max)
+
+        target_price = 10.0
+        
+        if self.price < target_price:
+            upward_strength = 0.10
+            reversion = upward_strength * ((target_price - self.price) / target_price)
+        else:
+            downward_strength = 0.03
+            reversion = -downward_strength * ((self.price - target_price) / target_price)
+        
+        total_change = random_change + reversion
+        
+        self.price = max(0.1, self.price * (1 + total_change))
         super().save()  
 
         StockPriceHistory.objects.create(stock=self, price=self.price)
