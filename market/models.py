@@ -94,7 +94,7 @@ class MarketEvent(models.Model):
     def apply_event(self, stock):
         """Apply the market event to a given stock."""
         impact = random.uniform(self.impact_low, self.impact_high)
-        stock.price = max(0.1, stock.price * (1 + (2*impact)))
+        stock.price = max(0.1, stock.price * (1 + impact))
         stock.save()
 
     def __str__(self):

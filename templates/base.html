@@ -377,7 +377,7 @@
                     
                     if (response.ok) {
                         showAdminFeedback(`Event applied: ${data.event} → ${data.stock}`);
-                        setTimeout(() => window.location.reload(), 2000);
+                        loadStocks(); // Refresh stock list without reloading page
                     } else {
                         showAdminFeedback(data.error || 'Failed to apply event', true);
                     }
@@ -417,10 +417,7 @@
                     
                     if (response.ok) {
                         showAdminFeedback(`Added $${amount} to ${data.user_name}. New balance: $${data.new_balance}`);
-                        setTimeout(() => {
-                            loadUsers();
-                            window.location.reload();
-                        }, 1500);
+                        loadUsers(); // Refresh user list without reloading page
                     } else {
                         showAdminFeedback(data.error || 'Failed to add money', true);
                     }
@@ -460,10 +457,7 @@
                     
                     if (response.ok) {
                         showAdminFeedback(`${data.stock} price set to $${data.new_price}`);
-                        setTimeout(() => {
-                            loadStocks();
-                            window.location.reload();
-                        }, 1500);
+                        loadStocks(); // Refresh stock list without reloading page
                     } else {
                         showAdminFeedback(data.error || 'Failed to set price', true);
                     }
@@ -502,7 +496,7 @@
                     
                     if (response.ok) {
                         showAdminFeedback(`${eventNames[eventType]} activated! ${data.stocks_affected} stocks affected.`);
-                        setTimeout(() => window.location.reload(), 2000);
+                        loadStocks(); // Refresh stock list without reloading page
                     } else {
                         showAdminFeedback(data.error || 'Failed to trigger event', true);
                     }
@@ -551,10 +545,7 @@
                     
                     if (response.ok) {
                         showAdminFeedback(`🐵 ${data.message} Added ${data.total_shares_added} shares to ${data.user_name}. Portfolio worth: $${data.portfolio_worth}`);
-                        setTimeout(() => {
-                            loadUsers();
-                            window.location.reload();
-                        }, 2000);
+                        loadUsers(); // Refresh user list without reloading page
                     } else {
                         showAdminFeedback(data.error || 'Failed to execute monkey business', true);
                     }
