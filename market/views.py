@@ -312,7 +312,7 @@ def latest_event(request):
 	stock = app.stock
 
 	try:
-		rendered = ev.text.replace('{company}', escape(stock.name))
+		rendered = ev.text.replace('{company}', stock.name)
 	except Exception:
 		rendered = ev.text
 
