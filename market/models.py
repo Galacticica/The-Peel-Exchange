@@ -28,26 +28,18 @@ class Stock(models.Model):
     def random_fluctuate(self):
         """Randomly fluctuate the stock price and maintain price history.
         
-        Uses an asymmetric mean-reverting model: strong recovery for crashed stocks,
-        minimal resistance for successful stocks.
+        Uses a realistic random walk with a small upward drift to compensate
+        for the mathematical downward bias of percentage-based changes and
+        simulate real economic growth.
         """
         if self.volatility_min is None or self.volatility_max is None or self.volatility_min != -1 * self.volatility_max:
             base_volatility = random.uniform(0.05, 0.15)
             self.volatility_min = -1 * base_volatility
             self.volatility_max = base_volatility
         
+        drift = 0.005  
         random_change = random.uniform(self.volatility_min, self.volatility_max)
-
-        target_price = 10.0
-        
-        if self.price < target_price:
-            upward_strength = 0.10
-            reversion = upward_strength * ((target_price - self.price) / target_price)
-        else:
-            downward_strength = 0.03
-            reversion = -downward_strength * ((self.price - target_price) / target_price)
-        
-        total_change = random_change + reversion
+        total_change = random_change + drift
         
         self.price = max(0.1, self.price * (1 + total_change))
         super().save()  
@@ -102,7 +94,7 @@ class MarketEvent(models.Model):
     def apply_event(self, stock):
         """Apply the market event to a given stock."""
         impact = random.uniform(self.impact_low, self.impact_high)
-        stock.price = max(0.1, stock.price * (1 + (1.2*impact)))
+        stock.price = max(0.1, stock.price * (1 + (2*impact)))
         stock.save()
 
     def __str__(self):
