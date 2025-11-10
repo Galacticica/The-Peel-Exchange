@@ -42,16 +42,10 @@ RUN chmod +x /usr/local/bin/run-cron.sh
 COPY run-scheduled-job.sh /usr/local/bin/run-scheduled-job.sh
 RUN chmod +x /usr/local/bin/run-scheduled-job.sh
 
-# Build frontend assets (vite) at image build time so production image serves static files
-# Fail the build if the frontend build fails so we don't produce images missing the manifest.
 RUN npm run build 
 
-# Ensure Django settings are available and collect static files into STATIC_ROOT so
-# the Vite manifest (static/dist/manifest.json) is copied into STATIC_ROOT/dist/manifest.json
-# This makes the manifest available at /app/staticfiles/dist/manifest.json in the container.
 ENV DJANGO_SETTINGS_MODULE=conf.settings
 
-# Collect static files after the frontend build so the manifest exists in STATIC_ROOT
 RUN python manage.py collectstatic --noinput
 
 EXPOSE 8000 5173
