@@ -3,7 +3,6 @@ set -euo pipefail
 
 cd /app
 
-# Use DEBUG env var ("1" for development) to decide dev vs production behavior
 DEBUG=${DEBUG:-0}
 
 if [ "$DEBUG" = "1" ]; then
@@ -39,7 +38,6 @@ else
 
 	PORT=${PORT:-8000}
 	echo "Starting gunicorn on 0.0.0.0:${PORT}"
-	# Reduce workers from 3 to 2 to save memory on free tier
 	exec gunicorn conf.wsgi:application \
 		--bind 0.0.0.0:${PORT} \
 		--workers 2 \
