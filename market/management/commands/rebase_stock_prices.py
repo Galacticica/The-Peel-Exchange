@@ -27,8 +27,8 @@ class Command(BaseCommand):
             old_price = stock.price
             new_price = round(random.uniform(2.0, 55.0), 2)
             
-            stock.price = new_price
-            stock.save()
+            # Update directly without triggering save() logic
+            Stock.objects.filter(id=stock.id).update(price=new_price)
             
             # Add to price history
             StockPriceHistory.objects.create(stock=stock, price=new_price)
