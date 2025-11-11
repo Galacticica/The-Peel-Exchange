@@ -37,7 +37,13 @@ class Stock(models.Model):
             self.volatility_min = -1 * base_volatility
             self.volatility_max = base_volatility
         
-        drift = 0.005  
+        if self.price < 0.5:
+            drift = 0.005
+        elif self.price > 5000:
+            drift = -0.01
+        else:
+            drift = 0
+
         random_change = random.uniform(self.volatility_min, self.volatility_max)
         total_change = random_change + drift
         
@@ -47,8 +53,8 @@ class Stock(models.Model):
         StockPriceHistory.objects.create(stock=self, price=self.price)
 
         history = self.history.order_by('-timestamp')
-        if history.count() > 2000:
-            for old in history[2000:]:
+        if history.count() > 5000:
+            for old in history[5000:]:
                 old.delete()
 
     def __str__(self):
