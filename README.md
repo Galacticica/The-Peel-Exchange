@@ -2,7 +2,10 @@
 
 A banana-themed stock market simulation game designed to teach financial literacy through gamification.
 
-**🌐 Live Site**: [https://peel-exchange.fly.dev](https://peel-exchange.fly.dev)
+To try it yourself:
+1. Clone down the repo.
+2. Run ```uv sync```
+3. Run ```docker compose up```
 
 ## 🎯 Problem
 
@@ -89,6 +92,9 @@ The Peel Exchange gamifies stock market education with a quirky banana company t
 
 ### Technical Improvements
 - [ ] Improved Real-Time Updates
+
+## Photos
+Coming Soon
 
 ## 📞 Contact
 
